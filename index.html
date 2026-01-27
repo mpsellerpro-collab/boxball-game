@@ -3,105 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Russia</title>
+    <title>BoxBall Skins</title>
+    
+    <!-- 👇 НАСТРОЙКИ 👇 -->
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkA8d8DIy994lgU70DGQ604EZ6e59kkEPm_Zhfaj8eG_QxmbwKltgFK5kRF3bl41_LzA/exec"; 
+        const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing";
+        const CHANNEL_URL = "https://t.me/DUROV";
+        const REVIEW_URL = "https://www.wildberries.ru/catalog/ВАШ_АРТИКУЛ/detail.aspx"; 
+        const SECRET_CODE = "BOX2025";
+    </script>
+    <!-- 👆 КОНЕЦ НАСТРОЕК 👆 -->
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        :root {
+            /* ЦВЕТОВЫЕ ПЕРЕМЕННЫЕ (МЕНЯЮТСЯ JS) */
+            --primary: #ff0055;
+            --accent: #ffcc00;
+            --bg-grad-start: #1a0b0b;
+            --bg-grad-end: #000000;
+            --text-color: white;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle at center, #1a0b0b 0%, #000000 100%);
-            color: white;
-            display: flex; flex-direction: column; align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: radial-gradient(circle at center, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
+            color: var(--text-color); display: flex; flex-direction: column; align-items: center;
             height: 100vh; margin: 0; overflow: hidden; text-align: center;
             user-select: none; -webkit-tap-highlight-color: transparent;
+            transition: background 0.5s;
         }
 
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.3s; }
         .active { display: flex; opacity: 1; }
 
+        /* ИГРОВОЙ КРУГ */
         .score-circle {
-            width: 210px; height: 210px; border-radius: 50%; 
-            border: 8px solid #333;
+            width: 210px; height: 210px; border-radius: 50%; border: 8px solid #333;
             display: flex; align-items: center; justify-content: center;
             font-size: 90px; font-weight: 900; margin: 15px 0;
             background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 70%);
-            transition: 0.05s; position: relative; z-index: 2;
+            transition: border-color 0.1s; position: relative; z-index: 2;
         }
-        .hit { transform: scale(1.1); border-color: #ff0055; box-shadow: 0 0 50px rgba(255,0,85,0.4); color: #ff0055; }
-        .hit-survival { transform: scale(1.1); border-color: #ffcc00; box-shadow: 0 0 50px rgba(255,204,0,0.4); color: #ffcc00; }
+        
+        @keyframes shake-anim {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shake { animation: shake-anim 0.3s; }
+
+        .hit { border-color: var(--primary); box-shadow: 0 0 50px var(--primary); color: var(--primary); }
 
         button {
-            padding: 16px 0; font-size: 17px; font-weight: 800;
-            background: #ff0055; color: white; border: none; border-radius: 14px;
-            width: 100%; max-width: 280px; margin-top: 10px; cursor: pointer;
-            text-transform: uppercase; box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3);
-            position: relative; z-index: 5;
+            padding: 16px 0; font-size: 17px; font-weight: 800; background: var(--primary); color: white; border: none; border-radius: 14px;
+            width: 100%; max-width: 280px; margin-top: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; z-index: 5;
+            transition: background 0.3s;
         }
         button:active { transform: scale(0.96); }
         button:disabled { background: #444; color: #888; box-shadow: none; cursor: not-allowed; }
-        
-        button.channel-btn { background: #2AABEE; color: white; box-shadow: 0 4px 15px rgba(42, 171, 238, 0.3); }
+        button.channel-btn { background: #2AABEE; }
         button.secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; box-shadow: none; font-size: 14px; margin-top: 15px; padding: 12px; }
 
         /* ВЫБОР РЕЖИМА */
-        .mode-selector { display: flex; gap: 10px; margin-bottom: 10px; width: 90%; max-width: 320px; }
-        .mode-btn { flex: 1; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 13px; font-weight: bold; margin: 0; box-shadow: none; }
-        .mode-btn.active-mode { background: #ff0055; color: white; border-color: #ff0055; box-shadow: 0 0 15px rgba(255,0,85,0.3); }
-        .mode-btn.survival-mode.active-mode { background: #ffcc00; color: black; border-color: #ffcc00; box-shadow: 0 0 15px rgba(255,204,0,0.3); }
+        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; width: 95%; max-width: 340px; }
+        .mode-btn { flex: 1; padding: 10px 5px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 11px; font-weight: bold; margin: 0; box-shadow: none; }
+        .mode-btn.active-mode { background: var(--primary); color: white; border-color: var(--primary); }
 
         /* НАСТРОЙКИ */
         .settings-panel { background: rgba(30,30,30,0.95); border: 1px solid #555; padding: 20px; border-radius: 15px; margin-bottom: 20px; width: 85%; max-width: 300px; display: none; z-index: 10; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        input[type=range] { width: 100%; margin: 15px 0; accent-color: #ff0055; }
-
-        .rules-box { background: rgba(255, 0, 85, 0.1); border: 1px solid rgba(255, 0, 85, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; width: 90%; max-width: 300px; font-size: 12px; line-height: 1.4; color: #ffcccc; }
+        input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); }
         
-        /* ЛИДЕРБОРД С ДАТОЙ */
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; color: #ccc; }
+        .toggle-switch { width: 40px; height: 20px; background: #555; border-radius: 10px; position: relative; cursor: pointer; }
+        .toggle-switch.on { background: var(--primary); }
+        .toggle-knob { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; }
+        .toggle-switch.on .toggle-knob { left: 22px; }
+
+        /* ЛИДЕРБОРД */
         .leaderboard-box { background: rgba(0,0,0,0.3); width: 100%; max-height: 35vh; overflow-y: auto; border-radius: 16px; margin: 15px 0; }
         .leader-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .leader-left { text-align: left; }
-        .leader-name { font-size: 14px; font-weight: bold; display: block; color: #eee; }
-        .leader-date { font-size: 10px; color: #888; display: block; margin-top: 3px; }
+        .leader-name { font-size: 14px; font-weight: bold; display: block; color: #eee; text-align: left; }
+        .leader-date { font-size: 10px; color: #888; display: block; margin-top: 3px; text-align: left; }
         .leader-score { font-size: 18px; font-weight: bold; color: #fff; }
-        .leader-row:nth-child(1) .leader-name, .leader-row:nth-child(1) .leader-score { color: #ffcc00; text-shadow: 0 0 10px rgba(255,204,0,0.3); }
+        .leader-row:nth-child(1) .leader-name, .leader-row:nth-child(1) .leader-score { color: var(--accent); }
 
         .shield-icon { font-size: 10px; color: #00ff88; margin-bottom: 10px; border: 1px solid #00ff88; padding: 4px 8px; border-radius: 20px; align-self: flex-start; margin-top: 10px; }
-        
-        @keyframes pulse-red { 0% { color: #fff; transform: scale(1); } 50% { color: #ff0000; transform: scale(1.2); } 100% { color: #fff; transform: scale(1); } }
-        .critical-time { animation: pulse-red 0.5s infinite; }
-
-        .leader-tabs { display: flex; width: 100%; margin-bottom: 10px; border-bottom: 1px solid #444; }
-        .leader-tab { flex: 1; padding: 10px; font-size: 12px; font-weight: bold; color: #666; cursor: pointer; transition: 0.2s; }
-        .leader-tab.active-tab { color: #ff0055; border-bottom: 2px solid #ff0055; background: rgba(255,0,85,0.05); }
-        .leader-tab.survival-tab.active-tab { color: #ffcc00; border-bottom: 2px solid #ffcc00; background: rgba(255,204,0,0.05); }
-
-        /* ЮРИДИЧЕСКИЙ БЛОК */
-        .legal-footer { position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center; line-height: 1.4; }
         .legal-checkbox-area { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; width: 90%; max-width: 300px; text-align: left; font-size: 11px; color: #aaa; }
-        .legal-checkbox-area input { margin-top: 2px; }
-        .legal-link { color: #00ff88; text-decoration: underline; cursor: pointer; }
+        .legal-link { color: var(--primary); text-decoration: underline; cursor: pointer; }
+
+        /* МАГАЗИН СКИНОВ */
+        .skins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
+        .skin-card { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 10px; padding: 10px; cursor: pointer; position: relative; opacity: 0.5; }
+        .skin-card.unlocked { opacity: 1; border-color: #666; }
+        .skin-card.active-skin { border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
+        .skin-color { width: 30px; height: 30px; border-radius: 50%; margin: 0 auto 5px; }
+        .skin-name { font-size: 12px; font-weight: bold; }
+        .lock-icon { font-size: 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; }
+
+        /* ОКНА */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
+        .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid var(--primary); text-align: center; width: 85%; max-width: 320px; max-height: 80vh; overflow-y: auto; }
+
+        .career-box { margin-bottom: 20px; padding: 10px; border-top: 1px solid #333; border-bottom: 1px solid #333; width: 100%; }
+        .career-text { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .career-num { font-size: 24px; color: #fff; font-weight: 900; }
+        .rank-badge { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; }
+        
+        .confetti { position: absolute; width: 10px; height: 10px; animation: fall linear forwards; z-index: 100; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
     </style>
 </head>
 <body>
 
+    <!-- ОКНО ОТЗЫВА -->
+    <div id="reviewModal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="font-size: 24px; margin-bottom: 10px;">🎉 НОВЫЙ РЕКОРД!</div>
+            <div style="color: #ccc; font-size: 14px; margin-bottom: 20px;">
+                Ты машина! 🤖<br>Помоги нам стать лучше — оставь отзыв.
+            </div>
+            <button onclick="openReviewLink()" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ ОСТАВИТЬ ОТЗЫВ</button>
+            <button onclick="document.getElementById('reviewModal').style.display='none'" style="background: transparent; border: 1px solid #555;">ПОЗЖЕ</button>
+        </div>
+    </div>
+
+    <!-- ОКНО ТЕМ (МАГАЗИН) -->
+    <div id="skinsModal" class="modal-overlay">
+        <div class="modal-content" style="border-color: #fff;">
+            <h3>🎨 ВЫБЕРИ СТИЛЬ</h3>
+            <p style="font-size:12px; color:#888;">Набивай удары, чтобы открыть новые цвета!</p>
+            <div class="skins-grid" id="skinsGrid">
+                <!-- Скины генерируются JS -->
+            </div>
+            <button onclick="document.getElementById('skinsModal').style.display='none'" style="margin-top:15px; background: #333;">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 30px;">RUSSIA</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">ULTIMATE</p>
+        
+        <div class="career-box">
+            <div class="career-text">Всего ударов</div>
+            <div class="career-num" id="totalHitsLogin">0</div>
+        </div>
+
         <input type="text" id="passInput" placeholder="КОД ИЗ КОРОБКИ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:18px; margin-bottom:15px; width:80%;">
         <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
-        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px;">Неверный код доступа</p>
+        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px;">Неверный код</p>
         
-        <!-- КОПИРАЙТ -->
-        <div class="legal-footer">
-            © 2026 BOXBALL RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.<br>
-            КОПИРОВАНИЕ ПРЕСЛЕДУЕТСЯ ПО ЗАКОНУ РФ.
-        </div>
+        <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">© 2025 BOXBALL RUSSIA.</div>
     </div>
 
     <!-- 2. ИГРА -->
     <div id="screen-game" class="screen">
         <div class="mode-selector">
             <button class="mode-btn active-mode" id="btnSprint" onclick="setMode('sprint')">⚡️ СПРИНТ</button>
-            <button class="mode-btn survival-mode" id="btnSurvival" onclick="setMode('survival')">💀 ВЫЖИВАНИЕ</button>
+            <button class="mode-btn" id="btnSurvival" onclick="setMode('survival')">💀 ВЫЖИВАНИЕ</button>
+            <button class="mode-btn" id="btnRhythm" onclick="setMode('rhythm')">🎵 РИТМ</button>
         </div>
 
         <div style="display:flex; justify-content:space-between; width:90%; align-items: center; margin-bottom: 5px;">
@@ -112,11 +177,27 @@
             </div>
         </div>
         
+        <!-- ПАНЕЛЬ НАСТРОЕК -->
         <div class="settings-panel" id="settingsPanel">
+            <h3 style="margin-top:0; font-size:14px; margin-bottom:15px;">НАСТРОЙКИ</h3>
+            
+            <div class="toggle-row">
+                <span>🔊 Звук</span>
+                <div class="toggle-switch on" id="togSound" onclick="toggleOption('sound')"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="toggle-row">
+                <span>📳 Вибрация</span>
+                <div class="toggle-switch on" id="togVibro" onclick="toggleOption('vibro')"><div class="toggle-knob"></div></div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
+
             <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">15</span></label>
             <input type="range" id="sensRange" min="5" max="50" value="15" oninput="updateSens(this.value)">
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; box-shadow: none; margin-bottom: 5px;">✅ Сбросить на стандарт (15)</button>
-            <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; width: 100%; box-shadow: none; margin-bottom: 5px;">🚪 Выйти</button>
+            
+            <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
+            
+            <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; margin-bottom: 5px;">🚪 Выйти</button>
             <button onclick="toggleSettings()" style="margin-top:5px; padding:10px; font-size:12px; background:#222; border:1px solid #444;">ЗАКРЫТЬ</button>
         </div>
         
@@ -127,23 +208,26 @@
         <button onclick="showLeaderboard(true)" class="secondary-btn">🏆 ТАБЛИЦА ЛИДЕРОВ</button>
     </div>
 
-    <!-- 3. РЕЗУЛЬТАТ (С ЗАЩИТОЙ ДАННЫХ) -->
+    <!-- 3. РЕЗУЛЬТАТ -->
     <div id="screen-save" class="screen">
-        <div style="font-size:14px; color:#aaa; margin-bottom: 5px;">РЕЗУЛЬТАТ</div>
-        <h1 style="font-size:80px; margin:0; color:#ff0055;" id="finalScore">0</h1>
-        <div style="font-size:14px; color:#ffcc00; margin-bottom: 20px; font-weight:bold;" id="modeResultLabel">СПРИНТ</div>
+        <div style="font-size:14px; color:#aaa;">ВАШ РЕЗУЛЬТАТ</div>
+        <div class="rank-badge" id="rankDisplay">НОВИЧОК</div>
+        <h1 style="font-size:80px; margin:0; color:var(--primary);" id="finalScore">0</h1>
+        <div style="font-size:12px; color:var(--accent); font-weight:bold; margin-bottom:10px;" id="recordMsg"></div>
+
+        <div style="display:flex; gap:15px; justify-content:center; margin-bottom:15px;">
+            <div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:5px;">🔥 <span id="resCalories">0</span> ККАЛ</div>
+            <div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:5px;">🎮 <span id="resMode">СПРИНТ</span></div>
+        </div>
         
-        <input type="text" id="nicknameInput" placeholder="Ваше Имя" maxlength="15" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%; margin-bottom: 15px;">
+        <input type="text" id="nicknameInput" placeholder="Ваше Имя" maxlength="15" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%; margin-bottom: 10px;">
         
-        <!-- ГАЛОЧКА СОГЛАСИЯ -->
         <div class="legal-checkbox-area">
             <input type="checkbox" id="legalCheck" onchange="toggleSaveBtn()">
-            <label for="legalCheck">
-                Я согласен на <span class="legal-link" onclick="openPolicy()">обработку персональных данных</span> и принимаю условия участия.
-            </label>
+            <label for="legalCheck">Я согласен на <span class="legal-link" onclick="openPolicy()">обработку данных</span></label>
         </div>
 
-        <button id="saveBtn" onclick="saveScore()" disabled title="Поставьте галочку согласия">СОХРАНИТЬ В ТОП</button>
+        <button id="saveBtn" onclick="saveScore()" disabled>СОХРАНИТЬ В ТОП</button>
         <button class="channel-btn" onclick="openChannel()">🏆 КАНАЛ ТУРНИРА</button>
     </div>
 
@@ -152,23 +236,14 @@
         <h3>ТАБЛИЦА ЛИДЕРОВ</h3>
         <div class="leader-tabs">
             <div class="leader-tab active-tab" id="tabSprint" onclick="switchLeaderTab('sprint')">⚡️ СПРИНТ</div>
-            <div class="leader-tab survival-tab" id="tabSurvival" onclick="switchLeaderTab('survival')">💀 ВЫЖИВАНИЕ</div>
+            <div class="leader-tab" id="tabSurvival" onclick="switchLeaderTab('survival')">💀 ВЫЖИВАНИЕ</div>
+            <div class="leader-tab" id="tabRhythm" onclick="switchLeaderTab('rhythm')">🎵 РИТМ</div>
         </div>
         <div class="leaderboard-box" id="leaderList"><div style="padding:20px;">Загрузка...</div></div>
         <button id="leaderBackBtn" onclick="location.reload()" style="background: #333;">ИГРАТЬ СНОВА</button>
     </div>
 
     <script>
-        // ==========================================
-        // 👇 ВСТАВЛЯТЬ ССЫЛКИ ЗДЕСЬ 👇
-        // ==========================================
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkA8d8DIy994lgU70DGQ604EZ6e59kkEPm_Zhfaj8eG_QxmbwKltgFK5kRF3bl41_LzA/exec"; 
-        const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing"; // Ваша ссылка на гугл док
-        
-        const CHANNEL_URL = "https://t.me/DUROV"; // Ссылка на канал
-        const SECRET_CODE = "BOX2025";
-        // ==========================================
-        
         const MIN_HIT_DELAY = 180;
         let SENSITIVITY = 15;
         let score = 0, isRunning = false, lastHitTime = 0;
@@ -177,18 +252,101 @@
         let audioCtx;
         const synth = window.speechSynthesis;
         let timerInterval;
-        let viewingLeaderboardMode = 'sprint';
+        let metronomeInterval;
+        let totalHits = 0;
+        let personalBest = 0;
+        
+        // НАСТРОЙКИ
+        let isSoundOn = true;
+        let isVibroOn = true;
+        let currentTheme = 'default';
+
+        // ТЕМЫ
+        const THEMES = {
+            'default': { name: 'Неон (Стандарт)', color: '#ff0055', bg1: '#1a0b0b', bg2: '#000000', cost: 0 },
+            'cyber': { name: 'Кибер (500 уд.)', color: '#00ccff', bg1: '#0b1a1a', bg2: '#000000', cost: 500 },
+            'toxic': { name: 'Токсик (1к уд.)', color: '#00ff88', bg1: '#0b1a0b', bg2: '#000000', cost: 1000 },
+            'gold': { name: 'ЭЛИТА (5к уд.)', color: '#FFD700', bg1: '#1a1500', bg2: '#000000', cost: 5000 }
+        };
 
         window.onload = function() {
             if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
+            
+            // Загрузка сохранений
             const savedSens = localStorage.getItem('box_sens');
             if(savedSens) { 
                 SENSITIVITY = savedSens; 
                 document.getElementById('sensRange').value = savedSens;
                 document.getElementById('sensVal').innerText = savedSens;
             }
+            totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
+            document.getElementById('totalHitsLogin').innerText = totalHits.toLocaleString();
+            personalBest = parseInt(localStorage.getItem('box_pb_sprint')) || 0;
+            
+            // Загрузка настроек звука
+            if(localStorage.getItem('box_sound') === 'false') toggleOption('sound');
+            if(localStorage.getItem('box_vibro') === 'false') toggleOption('vibro');
+            
+            // Загрузка темы
+            const savedTheme = localStorage.getItem('box_theme');
+            if(savedTheme && THEMES[savedTheme]) applyTheme(savedTheme);
+
             if (localStorage.getItem('box_auth') === 'true') showScreen('screen-game');
         };
+
+        // --- УПРАВЛЕНИЕ ТЕМАМИ ---
+        function openSkins() {
+            const grid = document.getElementById('skinsGrid');
+            grid.innerHTML = '';
+            for (const [key, theme] of Object.entries(THEMES)) {
+                const locked = totalHits < theme.cost;
+                const active = currentTheme === key ? 'active-skin' : '';
+                const lockIcon = locked ? '<div class="lock-icon">🔒</div>' : '';
+                const opacity = locked ? '0.5' : '1';
+                
+                grid.innerHTML += `
+                <div class="skin-card ${active}" style="opacity:${opacity}" onclick="selectTheme('${key}', ${theme.cost})">
+                    <div class="skin-color" style="background:${theme.color}"></div>
+                    <div class="skin-name">${theme.name}</div>
+                    ${lockIcon}
+                </div>`;
+            }
+            document.getElementById('settingsPanel').style.display = 'none';
+            document.getElementById('skinsModal').style.display = 'flex';
+        }
+
+        function selectTheme(key, cost) {
+            if (totalHits < cost) {
+                alert(`Нужно набрать ${cost} ударов! У тебя пока ${totalHits}.`);
+                return;
+            }
+            applyTheme(key);
+            document.getElementById('skinsModal').style.display = 'none';
+        }
+
+        function applyTheme(key) {
+            currentTheme = key;
+            localStorage.setItem('box_theme', key);
+            const t = THEMES[key];
+            const root = document.documentElement;
+            root.style.setProperty('--primary', t.color);
+            root.style.setProperty('--bg-grad-start', t.bg1);
+            root.style.setProperty('--bg-grad-end', t.bg2);
+        }
+
+        // --- УПРАВЛЕНИЕ НАСТРОЙКАМИ ---
+        function toggleOption(opt) {
+            const el = document.getElementById(opt === 'sound' ? 'togSound' : 'togVibro');
+            const isOn = el.classList.contains('on');
+            if(isOn) {
+                el.classList.remove('on');
+                if(opt === 'sound') isSoundOn = false; else isVibroOn = false;
+            } else {
+                el.classList.add('on');
+                if(opt === 'sound') isSoundOn = true; else isVibroOn = true;
+            }
+            localStorage.setItem('box_' + opt, !isOn);
+        }
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function checkCode() { 
@@ -196,55 +354,74 @@
             else { document.getElementById('errorMsg').style.display = 'block'; }
         }
         function logout() { localStorage.removeItem('box_auth'); location.reload(); }
-        
-        function toggleSaveBtn() {
-            const chk = document.getElementById('legalCheck');
-            const btn = document.getElementById('saveBtn');
-            btn.disabled = !chk.checked;
-        }
+        function toggleSaveBtn() { document.getElementById('saveBtn').disabled = !document.getElementById('legalCheck').checked; }
         function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
+        function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
+        function updateSens(val) { SENSITIVITY = val; document.getElementById('sensVal').innerText = val; localStorage.setItem('box_sens', val); }
+        function setRecommended() { updateSens(15); document.getElementById('sensRange').value = 15; }
+        function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
+        function openReviewLink() { window.Telegram.WebApp.openLink(REVIEW_URL); document.getElementById('reviewModal').style.display = 'none'; }
+        
+        function speak(text) { 
+            if (!isSoundOn || synth.speaking) return; 
+            const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; u.rate = 1.2; synth.speak(u); 
+        }
 
         function setMode(mode) {
             if(isRunning) return;
             currentMode = mode;
-            document.getElementById('btnSprint').className = 'mode-btn';
-            document.getElementById('btnSurvival').className = 'mode-btn survival-mode';
+            document.querySelectorAll('.mode-btn').forEach(b => b.className = 'mode-btn');
+            
             if(mode === 'sprint') {
-                document.getElementById('btnSprint').classList.add('active-mode');
+                document.getElementById('btnSprint').className += ' active-mode';
                 document.getElementById('timer').innerText = "60";
                 document.getElementById('modeHint').innerText = "НАБЕЙ МАКСИМУМ ЗА 60 СЕК";
                 document.getElementById('timer').style.color = "#fff";
-                document.getElementById('timer').classList.remove('critical-time');
-            } else {
-                document.getElementById('btnSurvival').classList.add('active-mode');
+            } else if (mode === 'survival') {
+                document.getElementById('btnSurvival').className += ' active-mode';
                 document.getElementById('timer').innerText = "10";
                 document.getElementById('modeHint').innerText = "УСКОРЯЙСЯ, ЧТОБЫ ВЫЖИТЬ!";
                 document.getElementById('timer').style.color = "#ffcc00";
+            } else if (mode === 'rhythm') {
+                document.getElementById('btnRhythm').className += ' active-mode';
+                document.getElementById('timer').innerText = "60";
+                document.getElementById('modeHint').innerText = "БЕЙ В ТАКТ МЕТРОНОМА";
+                document.getElementById('timer').style.color = "#00ff88";
             }
         }
 
-        function toggleSettings() {
-            const el = document.getElementById('settingsPanel');
-            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-        }
-        function updateSens(val) { SENSITIVITY = val; document.getElementById('sensVal').innerText = val; localStorage.setItem('box_sens', val); }
-        function setRecommended() { updateSens(15); document.getElementById('sensRange').value = 15; }
-        function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
-        function speak(text) { if (synth.speaking) return; const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; u.rate = 1.2; synth.speak(u); }
-
         function playSound(type) {
+            if (!isSoundOn) return;
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
+            
             if (type === 'hit') {
-                const freq = currentMode === 'sprint' ? 600 : 400;
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(freq + 400, audioCtx.currentTime+0.1);
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime+0.1);
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
                 osc.start(); osc.stop(audioCtx.currentTime+0.1);
-                if (score > 0 && score % 20 === 0) { const phrases = ["Хорош!", "Давай еще!", "Держи ритм!", "Красавчик!"]; speak(phrases[Math.floor(Math.random()*phrases.length)]); }
+            } else if (type === 'tick') {
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.05);
+                osc.type = 'square'; osc.start(); osc.stop(audioCtx.currentTime+0.05);
             } else {
                 osc.frequency.value = 200; gain.gain.setValueAtTime(0.5, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1.5);
-                osc.start(); osc.stop(audioCtx.currentTime+1.5); setTimeout(() => speak("Стоп! Результат " + score), 1000);
+                osc.start(); osc.stop(audioCtx.currentTime+1.5);
+            }
+        }
+
+        function launchConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            for(let i=0; i<30; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random()*100 + 'vw';
+                c.style.background = colors[Math.floor(Math.random()*colors.length)];
+                c.style.animationDuration = (Math.random()*2+2) + 's';
+                document.body.appendChild(c);
+                setTimeout(()=>c.remove(), 4000);
             }
         }
 
@@ -264,16 +441,23 @@
                 document.querySelector('.secondary-btn').style.display = 'none'; 
                 
                 isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
-                timeLeft = currentMode === 'sprint' ? 60 : 10;
+                timeLeft = (currentMode === 'survival') ? 10 : 60;
                 document.getElementById('timer').innerText = timeLeft;
-                speak("Бой!");
 
                 if (timerInterval) clearInterval(timerInterval);
+                if (metronomeInterval) clearInterval(metronomeInterval);
+
+                if(currentMode === 'rhythm') {
+                    playSound('tick');
+                    metronomeInterval = setInterval(() => { if(isRunning) playSound('tick'); }, 600);
+                }
+
                 timerInterval = setInterval(() => { 
                     timeLeft -= 1; document.getElementById('timer').innerText = Math.floor(timeLeft); 
-                    if(timeLeft <= 3) document.getElementById('timer').classList.add('critical-time');
-                    else document.getElementById('timer').classList.remove('critical-time');
-                    if(timeLeft <= 0) { clearInterval(timerInterval); isRunning = false; finishGame(); } 
+                    if(timeLeft <= 0) { 
+                        clearInterval(timerInterval); if(metronomeInterval) clearInterval(metronomeInterval);
+                        isRunning = false; finishGame(); 
+                    } 
                 }, 1000);
 
                 script.onaudioprocess = function() {
@@ -285,16 +469,20 @@
                         const now = Date.now();
                         if(now - lastHitTime > MIN_HIT_DELAY) {
                             score++; const el = document.getElementById('scoreDisplay'); el.innerText = score; 
+                            el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 300);
+
                             if (currentMode === 'survival') {
                                 el.classList.add('hit-survival');
-                                let bonus = 1.0; 
-                                if (score > 20) bonus = 0.5; if (score > 50) bonus = 0.25;
+                                let bonus = 1.0; if (score > 20) bonus = 0.5; if (score > 50) bonus = 0.25;
                                 timeLeft += bonus; if (timeLeft > 10) timeLeft = 10;
                                 document.getElementById('timer').innerText = Math.floor(timeLeft);
-                                document.getElementById('timer').classList.remove('critical-time');
-                            } else { el.classList.add('hit'); }
+                            } else { 
+                                el.classList.add('hit'); 
+                            }
+                            
                             setTimeout(()=>el.className = 'score-circle', 100);
-                            playSound('hit'); if(window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                            playSound('hit'); 
+                            if(isVibroOn && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
                             lastHitTime = now;
                         }
                     }
@@ -303,15 +491,35 @@
         });
 
         function finishGame() { 
-            isRunning = false; playSound('end'); 
-            document.getElementById('finalScore').innerText = score; 
-            document.getElementById('modeResultLabel').innerText = currentMode === 'sprint' ? "РЕЖИМ СПРИНТ" : "РЕЖИМ ВЫЖИВАНИЕ";
-            document.querySelector('.mode-selector').style.opacity = '1';
+            isRunning = false; playSound('end'); launchConfetti();
             
-            // Сброс галочки для новой игры
+            const cals = Math.floor(score * 0.05); 
+            let rank = "НОВИЧОК";
+            if(score > 30) rank = "ЛЮБИТЕЛЬ";
+            if(score > 60) rank = "БОЕЦ";
+            if(score > 100) rank = "МАШИНА";
+            if(score > 150) rank = "ЛЕГЕНДА";
+
+            totalHits += score;
+            localStorage.setItem('box_total_hits', totalHits);
+
+            document.getElementById('finalScore').innerText = score; 
+            document.getElementById('resCalories').innerText = cals;
+            document.getElementById('resMode').innerText = currentMode.toUpperCase();
+            document.getElementById('rankDisplay').innerText = rank;
+            
+            personalBest = parseInt(localStorage.getItem('box_pb_' + currentMode)) || 0;
+            if (score > personalBest && score > 10) {
+                localStorage.setItem('box_pb_' + currentMode, score);
+                document.getElementById('recordMsg').innerText = "🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД!";
+                document.getElementById('reviewModal').style.display = 'flex';
+            } else {
+                document.getElementById('recordMsg').innerText = "";
+            }
+
+            document.querySelector('.mode-selector').style.opacity = '1';
             document.getElementById('legalCheck').checked = false;
             toggleSaveBtn(); 
-            
             showScreen('screen-save'); 
         }
         
@@ -324,11 +532,8 @@
         }
 
         function switchLeaderTab(mode) {
-            viewingLeaderboardMode = mode;
-            document.getElementById('tabSprint').className = 'leader-tab';
-            document.getElementById('tabSurvival').className = 'leader-tab survival-tab';
-            if(mode === 'sprint') document.getElementById('tabSprint').classList.add('active-tab');
-            else document.getElementById('tabSurvival').classList.add('active-tab');
+            document.querySelectorAll('.leader-tab').forEach(t => t.className = 'leader-tab');
+            document.getElementById('tab' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active-tab');
             fetchLeaderboardData(mode);
         }
 
@@ -338,7 +543,6 @@
             if(fromMenu) {
                 backBtn.innerText = "НАЗАД В МЕНЮ";
                 backBtn.onclick = function() { showScreen('screen-game'); };
-                initialMode = currentMode; 
             } else {
                 backBtn.innerText = "ИГРАТЬ СНОВА";
                 backBtn.onclick = function() { location.reload(); };
