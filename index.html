@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Tournament</title>
+    <title>BoxBall Final</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -64,7 +64,7 @@
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 30px;">TOURNAMENT EDITION</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 30px;">FINAL VERSION</p>
         <input type="text" id="passInput" placeholder="КОД ИЗ КОРОБКИ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:18px; margin-bottom:15px; width:80%;">
         <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
         <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px;">Неверный код доступа</p>
@@ -84,10 +84,18 @@
         
         <!-- ПАНЕЛЬ НАСТРОЕК (СКРЫТАЯ) -->
         <div class="settings-panel" id="settingsPanel">
-            <label style="font-size:12px; color:#ccc;">Порог срабатывания: <span id="sensVal">15</span></label>
+            <label style="font-size:12px; color:#ccc;">Порог: <span id="sensVal">15</span></label>
             <input type="range" id="sensRange" min="5" max="50" value="15" oninput="updateSens(this.value)">
-            <div style="font-size:10px; color:#888;">⬅️ Чувствительнее | Грубее ➡️</div>
-            <button onclick="toggleSettings()" style="margin-top:10px; padding:10px; font-size:12px; background:#333;">OK</button>
+            <div style="font-size:10px; color:#888; display:flex; justify-content:space-between; margin-bottom: 10px;">
+                <span>⬅️ Чувствительнее</span>
+                <span>Грубее ➡️</span>
+            </div>
+            
+            <button onclick="setRecommended()" style="background: transparent; border: 1px dashed #555; color: #00ff88; padding: 8px; font-size: 11px; width: 100%; margin-top: 5px; box-shadow: none;">
+                ✅ Сбросить на стандарт (15)
+            </button>
+
+            <button onclick="toggleSettings()" style="margin-top:10px; padding:10px; font-size:12px; background:#333;">ЗАКРЫТЬ</button>
         </div>
         
         <div class="score-circle" id="scoreDisplay">0</div>
@@ -116,14 +124,15 @@
     <script>
         // === ВСТАВЬТЕ СЮДА ВАШИ ССЫЛКИ ===
         const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
-        const CHANNEL_URL = "https://t.me/DUROV"; // Ссылка на канал
+        const CHANNEL_URL = "https://t.me/DUROV"; 
         const SECRET_CODE = "BOX2025";
         
-        const MIN_HIT_DELAY = 180; // Anti-cheat (мс)
+        const MIN_HIT_DELAY = 180; // Anti-cheat
         let SENSITIVITY = 15;
         let score = 0, isRunning = false, lastHitTime = 0;
-        let audioCtx; // Инициализируем позже
+        let audioCtx;
         const synth = window.speechSynthesis;
+        let timerInterval; // Переменная для таймера
 
         window.onload = function() {
             if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
@@ -151,6 +160,11 @@
             document.getElementById('sensVal').innerText = val;
             localStorage.setItem('box_sens', val); 
         }
+        function setRecommended() {
+            updateSens(15);
+            document.getElementById('sensRange').value = 15;
+        }
+        
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         function speak(text) { if (synth.speaking) return; const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; u.rate = 1.2; synth.speak(u); }
 
@@ -172,7 +186,6 @@
         const startBtn = document.getElementById('startBtn');
         startBtn.addEventListener('click', async () => {
             try {
-                // 1. Инициализация Аудио по клику (для iOS/Android)
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') await audioCtx.resume();
 
@@ -181,9 +194,7 @@
                 const mic = audioCtx.createMediaStreamSource(stream); 
                 const script = audioCtx.createScriptProcessor(2048, 1, 1);
                 
-                // Глушим выход, чтобы не было писка/эхо
                 const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
-
                 mic.connect(analyser); analyser.connect(script); script.connect(zeroGain); zeroGain.connect(audioCtx.destination);
                 
                 startBtn.style.display = 'none';
@@ -193,9 +204,16 @@
                 document.getElementById('scoreDisplay').innerText = 0; 
                 speak("Бой!");
 
-                const tInt = setInterval(() => { 
+                // Очистка старого таймера (на всякий случай)
+                if (timerInterval) clearInterval(timerInterval);
+
+                timerInterval = setInterval(() => { 
                     timeLeft--; document.getElementById('timer').innerText = timeLeft + "s"; 
-                    if(timeLeft <= 0) { clearInterval(tInt); isRunning = false; finishGame(); } 
+                    if(timeLeft <= 0) { 
+                        clearInterval(timerInterval); // ОСТАНОВКА ТАЙМЕРА (Исправлен баг)
+                        isRunning = false; 
+                        finishGame(); 
+                    } 
                 }, 1000);
 
                 script.onaudioprocess = function() {
@@ -204,7 +222,6 @@
                     let v = 0; for(let i=0; i<arr.length; i++) v+=arr[i];
                     let avg = v/arr.length;
 
-                    // ДЕТЕКЦИЯ С НАСТРОЙКОЙ
                     if(avg > SENSITIVITY) {
                         const now = Date.now();
                         if(now - lastHitTime > MIN_HIT_DELAY) {
@@ -217,11 +234,16 @@
                     }
                 }
             } catch(e) { 
-                alert("Ошибка: Разрешите микрофон! (" + e.message + ")"); 
+                alert("Ошибка: Разрешите микрофон!"); 
             }
         });
 
-        function finishGame() { playSound('end'); document.getElementById('finalScore').innerText = score; showScreen('screen-save'); }
+        function finishGame() { 
+            playSound('end'); 
+            document.getElementById('finalScore').innerText = score; 
+            showScreen('screen-save'); // Переход на экран результата, никаких alert!
+        }
+        
         function saveScore() {
             const name = document.getElementById('nicknameInput').value.trim() || "Аноним";
             const btn = document.querySelector('#screen-save button');
