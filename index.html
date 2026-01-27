@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Skins</title>
+    <title>BoxBall Clean</title>
     
     <!-- 👇 НАСТРОЙКИ 👇 -->
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkA8d8DIy994lgU70DGQ604EZ6e59kkEPm_Zhfaj8eG_QxmbwKltgFK5kRF3bl41_LzA/exec"; 
         const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing";
-        const CHANNEL_URL = "https://t.me/DUROV";
         const REVIEW_URL = "https://www.wildberries.ru/catalog/ВАШ_АРТИКУЛ/detail.aspx"; 
         const SECRET_CODE = "BOX2025";
     </script>
@@ -18,7 +17,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            /* ЦВЕТОВЫЕ ПЕРЕМЕННЫЕ (МЕНЯЮТСЯ JS) */
+            /* ЦВЕТОВЫЕ ПЕРЕМЕННЫЕ */
             --primary: #ff0055;
             --accent: #ffcc00;
             --bg-grad-start: #1a0b0b;
@@ -66,7 +65,6 @@
         }
         button:active { transform: scale(0.96); }
         button:disabled { background: #444; color: #888; box-shadow: none; cursor: not-allowed; }
-        button.channel-btn { background: #2AABEE; }
         button.secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; box-shadow: none; font-size: 14px; margin-top: 15px; padding: 12px; }
 
         /* ВЫБОР РЕЖИМА */
@@ -116,6 +114,13 @@
         
         .confetti { position: absolute; width: 10px; height: 10px; animation: fall linear forwards; z-index: 100; }
         @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+        
+        /* Вкладки лидерборда */
+        .leader-tabs { display: flex; width: 100%; margin-bottom: 10px; border-bottom: 1px solid #444; }
+        .leader-tab { flex: 1; padding: 10px; font-size: 10px; font-weight: bold; color: #666; cursor: pointer; }
+        .leader-tab.active-tab { color: #ff0055; border-bottom: 2px solid #ff0055; }
+        .leader-tab.survival-tab.active-tab { color: #ffcc00; border-bottom: 2px solid #ffcc00; }
+        .leader-tab.rhythm-tab.active-tab { color: #00ff88; border-bottom: 2px solid #00ff88; }
     </style>
 </head>
 <body>
@@ -137,9 +142,7 @@
         <div class="modal-content" style="border-color: #fff;">
             <h3>🎨 ВЫБЕРИ СТИЛЬ</h3>
             <p style="font-size:12px; color:#888;">Набивай удары, чтобы открыть новые цвета!</p>
-            <div class="skins-grid" id="skinsGrid">
-                <!-- Скины генерируются JS -->
-            </div>
+            <div class="skins-grid" id="skinsGrid"></div>
             <button onclick="document.getElementById('skinsModal').style.display='none'" style="margin-top:15px; background: #333;">ЗАКРЫТЬ</button>
         </div>
     </div>
@@ -147,7 +150,7 @@
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">ULTIMATE</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">CLEAN VERSION</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -158,7 +161,7 @@
         <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
         <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px;">Неверный код</p>
         
-        <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">© 2025 BOXBALL RUSSIA.</div>
+        <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">© 2026 BOXBALL RUSSIA.</div>
     </div>
 
     <!-- 2. ИГРА -->
@@ -185,15 +188,13 @@
                 <span>🔊 Звук</span>
                 <div class="toggle-switch on" id="togSound" onclick="toggleOption('sound')"><div class="toggle-knob"></div></div>
             </div>
-            <div class="toggle-row">
-                <span>📳 Вибрация</span>
-                <div class="toggle-switch on" id="togVibro" onclick="toggleOption('vibro')"><div class="toggle-knob"></div></div>
-            </div>
 
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
 
             <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">15</span></label>
             <input type="range" id="sensRange" min="5" max="50" value="15" oninput="updateSens(this.value)">
+            
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (15)</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
             
@@ -228,7 +229,7 @@
         </div>
 
         <button id="saveBtn" onclick="saveScore()" disabled>СОХРАНИТЬ В ТОП</button>
-        <button class="channel-btn" onclick="openChannel()">🏆 КАНАЛ ТУРНИРА</button>
+        <!-- КНОПКА ТУРНИРА УДАЛЕНА -->
     </div>
 
     <!-- 4. ЛИДЕРЫ -->
@@ -258,7 +259,6 @@
         
         // НАСТРОЙКИ
         let isSoundOn = true;
-        let isVibroOn = true;
         let currentTheme = 'default';
 
         // ТЕМЫ
@@ -272,7 +272,6 @@
         window.onload = function() {
             if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
             
-            // Загрузка сохранений
             const savedSens = localStorage.getItem('box_sens');
             if(savedSens) { 
                 SENSITIVITY = savedSens; 
@@ -283,18 +282,15 @@
             document.getElementById('totalHitsLogin').innerText = totalHits.toLocaleString();
             personalBest = parseInt(localStorage.getItem('box_pb_sprint')) || 0;
             
-            // Загрузка настроек звука
             if(localStorage.getItem('box_sound') === 'false') toggleOption('sound');
-            if(localStorage.getItem('box_vibro') === 'false') toggleOption('vibro');
             
-            // Загрузка темы
             const savedTheme = localStorage.getItem('box_theme');
             if(savedTheme && THEMES[savedTheme]) applyTheme(savedTheme);
 
             if (localStorage.getItem('box_auth') === 'true') showScreen('screen-game');
         };
 
-        // --- УПРАВЛЕНИЕ ТЕМАМИ ---
+        // --- ТЕМЫ ---
         function openSkins() {
             const grid = document.getElementById('skinsGrid');
             grid.innerHTML = '';
@@ -303,7 +299,6 @@
                 const active = currentTheme === key ? 'active-skin' : '';
                 const lockIcon = locked ? '<div class="lock-icon">🔒</div>' : '';
                 const opacity = locked ? '0.5' : '1';
-                
                 grid.innerHTML += `
                 <div class="skin-card ${active}" style="opacity:${opacity}" onclick="selectTheme('${key}', ${theme.cost})">
                     <div class="skin-color" style="background:${theme.color}"></div>
@@ -334,18 +329,18 @@
             root.style.setProperty('--bg-grad-end', t.bg2);
         }
 
-        // --- УПРАВЛЕНИЕ НАСТРОЙКАМИ ---
+        // --- НАСТРОЙКИ ---
         function toggleOption(opt) {
-            const el = document.getElementById(opt === 'sound' ? 'togSound' : 'togVibro');
+            const el = document.getElementById('togSound');
             const isOn = el.classList.contains('on');
             if(isOn) {
                 el.classList.remove('on');
-                if(opt === 'sound') isSoundOn = false; else isVibroOn = false;
+                isSoundOn = false;
             } else {
                 el.classList.add('on');
-                if(opt === 'sound') isSoundOn = true; else isVibroOn = true;
+                isSoundOn = true;
             }
-            localStorage.setItem('box_' + opt, !isOn);
+            localStorage.setItem('box_sound', !isOn);
         }
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
@@ -359,7 +354,6 @@
         function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
         function updateSens(val) { SENSITIVITY = val; document.getElementById('sensVal').innerText = val; localStorage.setItem('box_sens', val); }
         function setRecommended() { updateSens(15); document.getElementById('sensRange').value = 15; }
-        function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         function openReviewLink() { window.Telegram.WebApp.openLink(REVIEW_URL); document.getElementById('reviewModal').style.display = 'none'; }
         
         function speak(text) { 
@@ -371,7 +365,6 @@
             if(isRunning) return;
             currentMode = mode;
             document.querySelectorAll('.mode-btn').forEach(b => b.className = 'mode-btn');
-            
             if(mode === 'sprint') {
                 document.getElementById('btnSprint').className += ' active-mode';
                 document.getElementById('timer').innerText = "60";
@@ -482,7 +475,6 @@
                             
                             setTimeout(()=>el.className = 'score-circle', 100);
                             playSound('hit'); 
-                            if(isVibroOn && window.Telegram.WebApp.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
                             lastHitTime = now;
                         }
                     }
