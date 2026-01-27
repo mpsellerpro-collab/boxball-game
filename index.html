@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Dual Leaderboard</title>
+    <title>BoxBall Legal</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -37,50 +37,44 @@
             position: relative; z-index: 5;
         }
         button:active { transform: scale(0.96); }
-        button.channel-btn { background: #2AABEE; color: white; box-shadow: 0 4px 15px rgba(42, 171, 238, 0.3); }
+        button:disabled { background: #444; color: #888; box-shadow: none; cursor: not-allowed; }
         
-        button.secondary-btn {
-            background: transparent; border: 1px solid #444; color: #aaa; 
-            box-shadow: none; font-size: 14px; margin-top: 15px; padding: 12px;
-        }
+        button.channel-btn { background: #2AABEE; color: white; box-shadow: 0 4px 15px rgba(42, 171, 238, 0.3); }
+        button.secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; box-shadow: none; font-size: 14px; margin-top: 15px; padding: 12px; }
 
         /* ВЫБОР РЕЖИМА */
-        .mode-selector {
-            display: flex; gap: 10px; margin-bottom: 10px; width: 90%; max-width: 320px;
-        }
-        .mode-btn {
-            flex: 1; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #444;
-            color: #aaa; border-radius: 12px; font-size: 13px; font-weight: bold; margin: 0; box-shadow: none;
-        }
-        .mode-btn.active-mode {
-            background: #ff0055; color: white; border-color: #ff0055; box-shadow: 0 0 15px rgba(255,0,85,0.3);
-        }
-        .mode-btn.survival-mode.active-mode {
-            background: #ffcc00; color: black; border-color: #ffcc00; box-shadow: 0 0 15px rgba(255,204,0,0.3);
-        }
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 10px; width: 90%; max-width: 320px; }
+        .mode-btn { flex: 1; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 13px; font-weight: bold; margin: 0; box-shadow: none; }
+        .mode-btn.active-mode { background: #ff0055; color: white; border-color: #ff0055; box-shadow: 0 0 15px rgba(255,0,85,0.3); }
+        .mode-btn.survival-mode.active-mode { background: #ffcc00; color: black; border-color: #ffcc00; box-shadow: 0 0 15px rgba(255,204,0,0.3); }
 
         /* НАСТРОЙКИ */
-        .settings-panel {
-            background: rgba(30,30,30,0.95); border: 1px solid #555;
-            padding: 20px; border-radius: 15px; margin-bottom: 20px; width: 85%; max-width: 300px;
-            display: none; z-index: 10; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-        }
+        .settings-panel { background: rgba(30,30,30,0.95); border: 1px solid #555; padding: 20px; border-radius: 15px; margin-bottom: 20px; width: 85%; max-width: 300px; display: none; z-index: 10; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
         input[type=range] { width: 100%; margin: 15px 0; accent-color: #ff0055; }
 
         .rules-box { background: rgba(255, 0, 85, 0.1); border: 1px solid rgba(255, 0, 85, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; width: 90%; max-width: 300px; font-size: 12px; line-height: 1.4; color: #ffcccc; }
         .leaderboard-box { background: rgba(0,0,0,0.3); width: 100%; max-height: 35vh; overflow-y: auto; border-radius: 16px; margin: 15px 0; }
-        .leader-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+        .leader-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .leader-left { text-align: left; }
+        .leader-name { font-size: 14px; font-weight: bold; display: block; color: #eee; }
+        .leader-date { font-size: 10px; color: #888; display: block; margin-top: 3px; }
+        .leader-score { font-size: 18px; font-weight: bold; color: #fff; }
+        .leader-row:nth-child(1) .leader-name, .leader-row:nth-child(1) .leader-score { color: #ffcc00; text-shadow: 0 0 10px rgba(255,204,0,0.3); }
+
         .shield-icon { font-size: 10px; color: #00ff88; margin-bottom: 10px; border: 1px solid #00ff88; padding: 4px 8px; border-radius: 20px; align-self: flex-start; margin-top: 10px; }
-        
-        /* АНИМАЦИЯ ПУЛЬСАЦИИ */
         @keyframes pulse-red { 0% { color: #fff; transform: scale(1); } 50% { color: #ff0000; transform: scale(1.2); } 100% { color: #fff; transform: scale(1); } }
         .critical-time { animation: pulse-red 0.5s infinite; }
 
-        /* ВКЛАДКИ ЛИДЕРБОРДА */
         .leader-tabs { display: flex; width: 100%; margin-bottom: 10px; border-bottom: 1px solid #444; }
-        .leader-tab { flex: 1; padding: 10px; font-size: 12px; font-weight: bold; color: #666; cursor: pointer; }
-        .leader-tab.active-tab { color: #ff0055; border-bottom: 2px solid #ff0055; }
-        .leader-tab.survival-tab.active-tab { color: #ffcc00; border-bottom: 2px solid #ffcc00; }
+        .leader-tab { flex: 1; padding: 10px; font-size: 12px; font-weight: bold; color: #666; cursor: pointer; transition: 0.2s; }
+        .leader-tab.active-tab { color: #ff0055; border-bottom: 2px solid #ff0055; background: rgba(255,0,85,0.05); }
+        .leader-tab.survival-tab.active-tab { color: #ffcc00; border-bottom: 2px solid #ffcc00; background: rgba(255,204,0,0.05); }
+
+        /* ЮРИДИЧЕСКИЙ БЛОК */
+        .legal-footer { position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center; line-height: 1.4; }
+        .legal-checkbox-area { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; width: 90%; max-width: 300px; text-align: left; font-size: 11px; color: #aaa; }
+        .legal-checkbox-area input { margin-top: 2px; }
+        .legal-link { color: #00ff88; text-decoration: underline; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -88,15 +82,20 @@
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 30px;">DUAL MODE</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 30px;">RUSSIA</p>
         <input type="text" id="passInput" placeholder="КОД ИЗ КОРОБКИ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:18px; margin-bottom:15px; width:80%;">
         <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
         <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px;">Неверный код доступа</p>
+        
+        <!-- КОПИРАЙТ -->
+        <div class="legal-footer">
+            © 2026 BOXBALL RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.<br>
+            КОПИРОВАНИЕ ПРЕСЛЕДУЕТСЯ ПО ЗАКОНУ РФ.
+        </div>
     </div>
 
     <!-- 2. ИГРА -->
     <div id="screen-game" class="screen">
-        
         <div class="mode-selector">
             <button class="mode-btn active-mode" id="btnSprint" onclick="setMode('sprint')">⚡️ СПРИНТ</button>
             <button class="mode-btn survival-mode" id="btnSurvival" onclick="setMode('survival')">💀 ВЫЖИВАНИЕ</button>
@@ -113,15 +112,8 @@
         <div class="settings-panel" id="settingsPanel">
             <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">15</span></label>
             <input type="range" id="sensRange" min="5" max="50" value="15" oninput="updateSens(this.value)">
-            
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; box-shadow: none; margin-bottom: 5px;">
-                ✅ Сбросить на стандарт (15)
-            </button>
-            
-            <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; width: 100%; box-shadow: none; margin-bottom: 5px;">
-                🚪 Выйти
-            </button>
-
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; box-shadow: none; margin-bottom: 5px;">✅ Сбросить на стандарт (15)</button>
+            <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; width: 100%; box-shadow: none; margin-bottom: 5px;">🚪 Выйти</button>
             <button onclick="toggleSettings()" style="margin-top:5px; padding:10px; font-size:12px; background:#222; border:1px solid #444;">ЗАКРЫТЬ</button>
         </div>
         
@@ -132,36 +124,43 @@
         <button onclick="showLeaderboard(true)" class="secondary-btn">🏆 ТАБЛИЦА ЛИДЕРОВ</button>
     </div>
 
-    <!-- 3. РЕЗУЛЬТАТ -->
+    <!-- 3. РЕЗУЛЬТАТ (С ЗАЩИТОЙ ДАННЫХ) -->
     <div id="screen-save" class="screen">
         <div style="font-size:14px; color:#aaa; margin-bottom: 5px;">РЕЗУЛЬТАТ</div>
         <h1 style="font-size:80px; margin:0; color:#ff0055;" id="finalScore">0</h1>
         <div style="font-size:14px; color:#ffcc00; margin-bottom: 20px; font-weight:bold;" id="modeResultLabel">СПРИНТ</div>
         
         <div class="rules-box">⚠️ <b>ВНИМАНИЕ:</b><br>Для получения призов необходимо видео-подтверждение.</div>
-        <input type="text" id="nicknameInput" placeholder="Ваше Имя" maxlength="15" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%;">
-        <button onclick="saveScore()">СОХРАНИТЬ В ТОП</button>
+        <input type="text" id="nicknameInput" placeholder="Ваше Имя" maxlength="15" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%; margin-bottom: 15px;">
+        
+        <!-- ГАЛОЧКА СОГЛАСИЯ -->
+        <div class="legal-checkbox-area">
+            <input type="checkbox" id="legalCheck" onchange="toggleSaveBtn()">
+            <label for="legalCheck">
+                Я согласен на <span class="legal-link" onclick="openPolicy()">обработку персональных данных</span> и принимаю условия участия.
+            </label>
+        </div>
+
+        <button id="saveBtn" onclick="saveScore()" disabled title="Поставьте галочку согласия">СОХРАНИТЬ В ТОП</button>
         <button class="channel-btn" onclick="openChannel()">🏆 КАНАЛ ТУРНИРА</button>
     </div>
 
     <!-- 4. ЛИДЕРЫ -->
     <div id="screen-leaders" class="screen">
         <h3>ТАБЛИЦА ЛИДЕРОВ</h3>
-        
-        <!-- ВКЛАДКИ -->
         <div class="leader-tabs">
             <div class="leader-tab active-tab" id="tabSprint" onclick="switchLeaderTab('sprint')">⚡️ СПРИНТ</div>
             <div class="leader-tab survival-tab" id="tabSurvival" onclick="switchLeaderTab('survival')">💀 ВЫЖИВАНИЕ</div>
         </div>
-
         <div class="leaderboard-box" id="leaderList"><div style="padding:20px;">Загрузка...</div></div>
         <button id="leaderBackBtn" onclick="location.reload()" style="background: #333;">ИГРАТЬ СНОВА</button>
     </div>
 
     <script>
-        // === ВСТАВЬТЕ ВАШУ ССЫЛКУ НИЖЕ ===
+        // === ВАШИ ССЫЛКИ ===
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkA8d8DIy994lgU70DGQ604EZ6e59kkEPm_Zhfaj8eG_QxmbwKltgFK5kRF3bl41_LzA/exec"; 
         const CHANNEL_URL = "https://t.me/DUROV"; 
+        const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА"; // Ссылка на гугл док с правилами
         const SECRET_CODE = "BOX2025";
         
         const MIN_HIT_DELAY = 180;
@@ -172,7 +171,7 @@
         let audioCtx;
         const synth = window.speechSynthesis;
         let timerInterval;
-        let viewingLeaderboardMode = 'sprint'; // Какой лидерборд смотрим
+        let viewingLeaderboardMode = 'sprint';
 
         window.onload = function() {
             if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
@@ -192,12 +191,19 @@
         }
         function logout() { localStorage.removeItem('box_auth'); location.reload(); }
         
+        // --- ЮРИДИЧЕСКАЯ ЛОГИКА ---
+        function toggleSaveBtn() {
+            const chk = document.getElementById('legalCheck');
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = !chk.checked;
+        }
+        function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
+
         function setMode(mode) {
             if(isRunning) return;
             currentMode = mode;
             document.getElementById('btnSprint').className = 'mode-btn';
             document.getElementById('btnSurvival').className = 'mode-btn survival-mode';
-            
             if(mode === 'sprint') {
                 document.getElementById('btnSprint').classList.add('active-mode');
                 document.getElementById('timer').innerText = "60";
@@ -296,6 +302,11 @@
             document.getElementById('finalScore').innerText = score; 
             document.getElementById('modeResultLabel').innerText = currentMode === 'sprint' ? "РЕЖИМ СПРИНТ" : "РЕЖИМ ВЫЖИВАНИЕ";
             document.querySelector('.mode-selector').style.opacity = '1';
+            
+            // Сброс галочки для новой игры
+            document.getElementById('legalCheck').checked = false;
+            toggleSaveBtn(); 
+            
             showScreen('screen-save'); 
         }
         
@@ -307,15 +318,12 @@
             fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ name: name, score: score, mode: currentMode, date: new Date().toLocaleDateString() }) }).then(() => showLeaderboard(false, currentMode)).catch(() => showLeaderboard(false, currentMode));
         }
 
-        // --- НОВАЯ ЛОГИКА ТАБЛИЦЫ ---
         function switchLeaderTab(mode) {
             viewingLeaderboardMode = mode;
             document.getElementById('tabSprint').className = 'leader-tab';
             document.getElementById('tabSurvival').className = 'leader-tab survival-tab';
-            
             if(mode === 'sprint') document.getElementById('tabSprint').classList.add('active-tab');
             else document.getElementById('tabSurvival').classList.add('active-tab');
-            
             fetchLeaderboardData(mode);
         }
 
@@ -325,7 +333,6 @@
             if(fromMenu) {
                 backBtn.innerText = "НАЗАД В МЕНЮ";
                 backBtn.onclick = function() { showScreen('screen-game'); };
-                // Если открыли из меню - показываем тот режим, который выбран там
                 initialMode = currentMode; 
             } else {
                 backBtn.innerText = "ИГРАТЬ СНОВА";
@@ -337,14 +344,22 @@
         function fetchLeaderboardData(mode) {
             const list = document.getElementById('leaderList'); 
             list.innerHTML = "<div style='padding:20px'>Загрузка...</div>";
-            
-            // Добавляем ?mode=sprint в запрос
             fetch(GOOGLE_SCRIPT_URL + "?mode=" + mode)
             .then(r=>r.json())
             .then(data => {
                 list.innerHTML = "";
                 if(!data.length) list.innerHTML = "<div style='padding:20px'>Пока пусто</div>";
-                data.forEach((row, i) => list.innerHTML += `<div class="leader-row"><span>#${i+1} ${row.name}</span><span>${row.score}</span></div>`);
+                data.forEach((row, i) => {
+                    let dateStr = row.date ? row.date : ''; 
+                    list.innerHTML += `
+                    <div class="leader-row">
+                        <div class="leader-left">
+                            <span class="leader-name">#${i+1} ${row.name}</span>
+                            <span class="leader-date">${dateStr}</span>
+                        </div>
+                        <span class="leader-score">${row.score}</span>
+                    </div>`;
+                });
             });
         }
     </script>
