@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Legal</title>
+    <title>BoxBall Russia</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -53,6 +53,8 @@
         input[type=range] { width: 100%; margin: 15px 0; accent-color: #ff0055; }
 
         .rules-box { background: rgba(255, 0, 85, 0.1); border: 1px solid rgba(255, 0, 85, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; width: 90%; max-width: 300px; font-size: 12px; line-height: 1.4; color: #ffcccc; }
+        
+        /* ЛИДЕРБОРД С ДАТОЙ */
         .leaderboard-box { background: rgba(0,0,0,0.3); width: 100%; max-height: 35vh; overflow-y: auto; border-radius: 16px; margin: 15px 0; }
         .leader-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .leader-left { text-align: left; }
@@ -62,6 +64,7 @@
         .leader-row:nth-child(1) .leader-name, .leader-row:nth-child(1) .leader-score { color: #ffcc00; text-shadow: 0 0 10px rgba(255,204,0,0.3); }
 
         .shield-icon { font-size: 10px; color: #00ff88; margin-bottom: 10px; border: 1px solid #00ff88; padding: 4px 8px; border-radius: 20px; align-self: flex-start; margin-top: 10px; }
+        
         @keyframes pulse-red { 0% { color: #fff; transform: scale(1); } 50% { color: #ff0000; transform: scale(1.2); } 100% { color: #fff; transform: scale(1); } }
         .critical-time { animation: pulse-red 0.5s infinite; }
 
@@ -130,7 +133,6 @@
         <h1 style="font-size:80px; margin:0; color:#ff0055;" id="finalScore">0</h1>
         <div style="font-size:14px; color:#ffcc00; margin-bottom: 20px; font-weight:bold;" id="modeResultLabel">СПРИНТ</div>
         
-        <div class="rules-box">⚠️ <b>ВНИМАНИЕ:</b><br>Для получения призов необходимо видео-подтверждение.</div>
         <input type="text" id="nicknameInput" placeholder="Ваше Имя" maxlength="15" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%; margin-bottom: 15px;">
         
         <!-- ГАЛОЧКА СОГЛАСИЯ -->
@@ -157,11 +159,15 @@
     </div>
 
     <script>
-        // === ВАШИ ССЫЛКИ ===
+        // ==========================================
+        // 👇 ВСТАВЛЯТЬ ССЫЛКИ ЗДЕСЬ 👇
+        // ==========================================
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkA8d8DIy994lgU70DGQ604EZ6e59kkEPm_Zhfaj8eG_QxmbwKltgFK5kRF3bl41_LzA/exec"; 
-        const CHANNEL_URL = "https://t.me/DUROV"; 
-        const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing"; // Ссылка на гугл док с правилами
+        const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing"; // Ваша ссылка на гугл док
+        
+        const CHANNEL_URL = "https://t.me/DUROV"; // Ссылка на канал
         const SECRET_CODE = "BOX2025";
+        // ==========================================
         
         const MIN_HIT_DELAY = 180;
         let SENSITIVITY = 15;
@@ -191,7 +197,6 @@
         }
         function logout() { localStorage.removeItem('box_auth'); location.reload(); }
         
-        // --- ЮРИДИЧЕСКАЯ ЛОГИКА ---
         function toggleSaveBtn() {
             const chk = document.getElementById('legalCheck');
             const btn = document.getElementById('saveBtn');
