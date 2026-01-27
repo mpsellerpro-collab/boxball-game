@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Test</title>
+    <title>BoxBall Test Fix</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -68,27 +68,28 @@
 
         <!-- ТЕСТ МИКРОФОНА -->
         <div class="controls">
-            <div style="font-size:14px; margin-bottom:5px;">УРОВЕНЬ ШУМА (ПРОВЕРКА):</div>
+            <div style="font-size:14px; margin-bottom:5px;">УРОВЕНЬ ШУМА:</div>
             <div class="mic-bar-container">
                 <div class="mic-bar" id="micLevel"></div>
             </div>
             
             <div style="font-size:14px; margin-top:15px; margin-bottom:5px;">ЧУВСТВИТЕЛЬНОСТЬ:</div>
-            <input type="range" id="sensRange" min="1" max="50" value="10" oninput="updateSens(this.value)">
+            <input type="range" id="sensRange" min="1" max="100" value="20" oninput="updateSens(this.value)">
             <div style="font-size:12px; color:#aaa;">
-                Текущая: <span id="sensVal">10</span> 
+                Текущая: <span id="sensVal">20</span> 
                 (Меньше = чувствительнее)
             </div>
         </div>
 
         <button id="startBtn">ВКЛЮЧИТЬ МИКРОФОН</button>
+        <div id="debugText" style="font-size: 10px; color: #555; margin-top: 10px;">Статус: Ожидание...</div>
     </div>
 
     <script>
         const SECRET_CODE = "BOX2025";
-        let SENSITIVITY = 10;
+        let SENSITIVITY = 20;
         let score = 0, isRunning = false, lastHit = 0;
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioCtx; // Инициализируем только по клику!
 
         function checkCode() {
             if(document.getElementById('passInput').value.trim().toUpperCase() === SECRET_CODE) {
@@ -101,35 +102,65 @@
             SENSITIVITY = val;
             document.getElementById('sensVal').innerText = val;
         }
+        
+        function debug(msg) {
+            document.getElementById('debugText').innerText = "Статус: " + msg;
+            console.log(msg);
+        }
 
         const startBtn = document.getElementById('startBtn');
         startBtn.addEventListener('click', async () => {
             try {
-                // ЗАПРОС МИКРОФОНА
+                debug("Запуск Аудио...");
+                
+                // 1. Создаем контекст ТОЛЬКО внутри клика (для iOS)
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // 2. Принудительно будим его
+                if (audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
+
+                debug("Запрос прав...");
+                // 3. Запрос микрофона
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 
-                // ЕСЛИ ДОШЛИ СЮДА - ЗНАЧИТ РАЗРЕШИЛИ!
+                debug("Микрофон получен. Настройка...");
                 const analyser = audioCtx.createAnalyser();
                 const mic = audioCtx.createMediaStreamSource(stream);
-                const script = audioCtx.createScriptProcessor(1024, 1, 1);
+                const script = audioCtx.createScriptProcessor(2048, 1, 1);
+                
+                // 4. Подключаем: Микрофон -> Анализатор -> Скрипт -> (Заглушка) -> Выход
+                // Это нужно, чтобы браузер не останавливал процесс "в никуда"
+                const zeroGain = audioCtx.createGain();
+                zeroGain.gain.value = 0.0; // Глушим звук, чтобы не пищало
                 
                 mic.connect(analyser);
                 analyser.connect(script);
-                script.connect(audioCtx.destination);
+                script.connect(zeroGain);
+                zeroGain.connect(audioCtx.destination);
                 
                 startBtn.style.display = 'none';
                 isRunning = true;
+                debug("Слушаю...");
                 
                 // Таймер
                 let timeLeft = 60;
                 setInterval(() => {
                     timeLeft--;
                     document.getElementById('timer').innerText = timeLeft + "s";
-                    if(timeLeft <= 0) alert("Время вышло! Счет: " + score);
+                    if(timeLeft <= 0) {
+                        alert("Время вышло! Счет: " + score);
+                        isRunning = false;
+                    }
                 }, 1000);
 
                 // ОБРАБОТКА ЗВУКА
                 script.onaudioprocess = function() {
+                    if (!isRunning) return;
+                    
                     const arr = new Uint8Array(analyser.frequencyBinCount);
                     analyser.getByteFrequencyData(arr);
                     
@@ -139,8 +170,8 @@
                     let average = values / arr.length;
 
                     // 1. ВИЗУАЛИЗАЦИЯ (ПРЫГАЮЩАЯ ПОЛОСКА)
-                    // Умножаем на 2, чтобы лучше было видно
-                    document.getElementById('micLevel').style.width = (average * 2) + "%";
+                    const barWidth = Math.min(average * 3, 100); // Умножаем для наглядности
+                    document.getElementById('micLevel').style.width = barWidth + "%";
 
                     // 2. ДЕТЕКЦИЯ УДАРА
                     // Если громкость выше чувствительности
@@ -156,7 +187,8 @@
                     }
                 }
             } catch(e) {
-                alert("ОШИБКА: Вы запретили доступ к микрофону! Нажмите на замочек в строке браузера и разрешите доступ.");
+                debug("ОШИБКА: " + e.message);
+                alert("ОШИБКА ДОСТУПА: " + e.message + ". Проверьте, что сайт открыт через HTTPS и права выданы.");
             }
         });
     </script>
