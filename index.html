@@ -198,7 +198,7 @@
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">FINAL VERSION</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">V13 (FAST)</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -316,8 +316,8 @@
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 140; // ОПТИМАЛЬНАЯ ЗАДЕРЖКА
-        let SENSITIVITY = 20; // ДЕФОЛТ
+        const MIN_HIT_DELAY = 80; // СУПЕР БЫСТРО (0.08с)
+        let SENSITIVITY = 20; // ОПТИМАЛЬНО
         
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
@@ -328,6 +328,9 @@
         let metronomeInterval;
         let totalHits = 0;
         let personalBest = 0;
+        
+        // ФЛАГ ГОТОВНОСТИ (УМНЫЙ СБРОС)
+        let isReadyForHit = true;
         
         // НАСТРОЙКИ
         let isSoundOn = true;
@@ -406,7 +409,7 @@
                     let sum = 0;
                     for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
-                    calibrationSamples.push(Math.floor(rms * 1.5));
+                    calibrationSamples.push(Math.floor(rms * 1.5)); // Используем ту же формулу с бустом
                 };
 
                 // ФИНИШ КАЛИБРОВКИ
@@ -419,11 +422,10 @@
                         let avgLevel = sumAll / calibrationSamples.length;
                         
                         calibrationSamples.sort((a, b) => a - b);
-                        let topIndex = Math.floor(calibrationSamples.length * 0.9);
                         let peakLevel = calibrationSamples[calibrationSamples.length - 1]; 
                         
                         // ФОРМУЛА: Среднее между шумом и пиком
-                        let newSens = avgLevel + (peakLevel - avgLevel) * 0.4;
+                        let newSens = avgLevel + (peakLevel - avgLevel) * 0.35;
                         if(newSens < 5) newSens = 5;
                         if(newSens > 60) newSens = 60;
                         
@@ -517,7 +519,6 @@
                 document.getElementById('nameInputArea').style.display = 'none';
                 document.getElementById('nameDisplayArea').style.display = 'block';
                 document.getElementById('displayName').innerText = savedName;
-                // Сразу разрешаем сохранять (галочка всё еще нужна)
             } else {
                 document.getElementById('nameInputArea').style.display = 'block';
                 document.getElementById('nameDisplayArea').style.display = 'none';
@@ -631,6 +632,7 @@
                 isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
                 timeLeft = (currentMode === 'survival') ? 10 : 60;
                 document.getElementById('timer').innerText = timeLeft;
+                isReadyForHit = true; 
 
                 if (timerInterval) clearInterval(timerInterval);
                 if (metronomeInterval) clearInterval(metronomeInterval);
@@ -648,7 +650,7 @@
                     } 
                 }, 1000);
 
-                // --- АЛГОРИТМ RMS WAVEFORM (С БУСТОМ) ---
+                // --- АЛГОРИТМ V13 (Smart Reset) ---
                 script.onaudioprocess = function() {
                     if(!isRunning) return;
                     
@@ -658,24 +660,34 @@
                     let sum = 0;
                     for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
-                    // Усиливаем x1.5 (Чувствительный буст)
+                    // Boost 1.5
                     let val = Math.floor(rms * 1.5); 
-                    
-                    // ВИЗУАЛИЗАЦИЯ
-                    const barW = Math.min(val * 1.5, 100);
+                    if (val < 5) val = 0;
+
+                    // Визуализация
+                    const visual = Math.min(val * 1.5, 100);
                     const barEl = document.getElementById('micLevel');
-                    barEl.style.width = barW + "%";
+                    barEl.style.width = visual + "%";
                     
                     document.getElementById('lastHitVal').innerText = val;
 
-                    // ПРОСТОЙ АЛГОРИТМ БЕЗ БЛОКИРОВКИ
+                    // 1. УДАР?
                     if (val > SENSITIVITY) {
-                        const now = Date.now();
-                        // Если прошло время задержки
-                        if(now - lastHitTime > MIN_HIT_DELAY) {
-                            score++; 
-                            registerHitVisual();
-                            lastHitTime = now;
+                         const now = Date.now();
+                         if (isReadyForHit && (now - lastHitTime > MIN_HIT_DELAY)) {
+                             score++; 
+                             registerHitVisual();
+                             lastHitTime = now;
+                             isReadyForHit = false; // Блок
+                             barEl.classList.add('hit-detected'); 
+                         }
+                    } else {
+                        // 2. СБРОС (УМНЫЙ)
+                        // Если громкость упала ниже 75% от порога - мы готовы снова
+                        // Это ключевое изменение: не ждем полной тишины!
+                        if (val < (SENSITIVITY * 0.75)) {
+                            isReadyForHit = true;
+                            barEl.classList.remove('hit-detected');
                         }
                     }
                 }
@@ -729,7 +741,7 @@
             document.querySelector('.mode-selector').style.opacity = '1';
             document.getElementById('legalCheck').checked = false;
             
-            checkSavedName(); // ПРОВЕРЯЕМ СОХРАНЕННОЕ ИМЯ
+            checkSavedName(); 
             toggleSaveBtn(); 
             showScreen('screen-save'); 
         }
@@ -743,7 +755,7 @@
             } else {
                 name = document.getElementById('nicknameInput').value.trim();
                 if(name.length < 2) { alert("Введите имя!"); return; }
-                localStorage.setItem('box_username', name); // СОХРАНЯЕМ ИМЯ
+                localStorage.setItem('box_username', name); 
             }
 
             const btn = document.querySelector('#screen-save button');
