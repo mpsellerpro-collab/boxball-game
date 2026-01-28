@@ -51,7 +51,7 @@
         
         /* Визуализатор громкости */
         .volume-meter {
-            width: 200px; height: 10px; background: #222; border-radius: 5px; margin-top: 15px;
+            width: 240px; height: 12px; background: #222; border-radius: 6px; margin-top: 15px;
             position: relative; overflow: hidden; border: 1px solid #444;
         }
         .volume-bar {
@@ -63,11 +63,15 @@
             left: 40%; box-shadow: 0 0 8px #ff0055;
         }
         
+        .last-hit-info {
+            font-size: 11px; color: #aaa; margin-top: 5px; font-family: monospace;
+        }
+        
         @keyframes shake-anim {
             0% { transform: translate(1px, 1px); } 25% { transform: translate(-2px, -2px); }
             50% { transform: translate(2px, 0px); } 75% { transform: translate(-1px, 2px); } 100% { transform: translate(0, 0); }
         }
-        .shake { animation: shake-anim 0.2s; }
+        .shake { animation: shake-anim 0.1s; }
 
         .hit { border-color: var(--primary); box-shadow: 0 0 50px var(--primary); color: var(--primary); }
 
@@ -210,7 +214,7 @@
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
 
             <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">20</span></label>
-            <input type="range" id="sensRange" min="5" max="50" value="20" oninput="updateSens(this.value)">
+            <input type="range" id="sensRange" min="5" max="100" value="20" oninput="updateSens(this.value)">
             
             <!-- КНОПКА СБРОСА -->
             <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (20)</button>
@@ -228,6 +232,8 @@
             <div class="volume-bar" id="micLevel"></div>
             <div class="volume-threshold" id="micThresh"></div>
         </div>
+        <!-- ИНФО О ПОСЛЕДНЕМ УДАРЕ ДЛЯ НАСТРОЙКИ -->
+        <div class="last-hit-info" id="lastHitInfo">Ударь, чтобы проверить силу</div>
         
         <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
 
@@ -270,7 +276,7 @@
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 200; // 0.2с между ударами
+        const MIN_HIT_DELAY = 120; // 120ms
         let SENSITIVITY = 20; 
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
@@ -301,7 +307,7 @@
             if(savedSens) { 
                 updateSens(savedSens); 
             } else {
-                updateSens(20); // Дефолт 20
+                updateSens(20); 
             }
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
@@ -391,10 +397,8 @@
             document.getElementById('sensVal').innerText = SENSITIVITY;
             document.getElementById('sensRange').value = SENSITIVITY;
             
-            // СИНХРОНИЗАЦИЯ: Красная черта теперь точно там, где нужно (SENSITIVITY * 2)
-            const percent = Math.min(SENSITIVITY * 2, 100);
-            const thresh = document.getElementById('micThresh');
-            if(thresh) thresh.style.left = percent + "%";
+            // СИНХРОНИЗАЦИЯ: Красная черта = SENSITIVITY
+            document.getElementById('micThresh').style.left = SENSITIVITY + "%";
             
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
@@ -508,17 +512,27 @@
                 script.onaudioprocess = function() {
                     if(!isRunning) return;
                     const arr = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(arr);
-                    let v = 0; for(let i=0; i<arr.length; i++) v+=arr[i];
-                    let avg = v/arr.length;
                     
-                    // ВИЗУАЛИЗАЦИЯ (avg * 2 = 100% Scale)
-                    const barW = Math.min(avg * 2, 100);
-                    const barEl = document.getElementById('micLevel');
-                    barEl.style.width = barW + "%";
+                    // ИЩЕМ ПИКОВУЮ ГРОМКОСТЬ (MAX), А НЕ СРЕДНЮЮ
+                    let maxVal = 0;
+                    for(let i=0; i<arr.length; i++) {
+                        if(arr[i] > maxVal) maxVal = arr[i];
+                    }
+                    // Нормализуем 0-255 -> 0-100
+                    let val = Math.floor((maxVal / 255) * 100);
+                    
+                    // ВИЗУАЛИЗАЦИЯ
+                    document.getElementById('micLevel').style.width = val + "%";
+                    
+                    // ПОКАЗЫВАЕМ ПОСЛЕДНИЙ ПИК ПОЛЬЗОВАТЕЛЮ (ДЛЯ НАСТРОЙКИ)
+                    if (val > 5) {
+                        document.getElementById('lastHitInfo').innerText = "СИЛА ПОСЛЕДНЕГО УДАРА: " + val;
+                    }
 
-                    // Простой алгоритм: Если громкость > порога
-                    if (avg > SENSITIVITY) {
+                    // ПРОСТОЙ АЛГОРИТМ: ЕСЛИ ГРОМКО -> УДАР
+                    if (val > SENSITIVITY) {
                         const now = Date.now();
+                        // Ждем пока пройдет 120 мс с прошлого удара
                         if(now - lastHitTime > MIN_HIT_DELAY) {
                             score++; registerHitVisual();
                             lastHitTime = now;
