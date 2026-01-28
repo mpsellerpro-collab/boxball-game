@@ -128,8 +128,9 @@
 
         /* КАЛИБРОВКА */
         .calibration-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .calib-circle { width: 150px; height: 150px; border: 5px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #00ff88; animation: pulse 1s infinite; margin-bottom: 20px; }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        .calib-circle { width: 180px; height: 180px; border: 5px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; color: #00ff88; margin-bottom: 20px; background: rgba(0,255,136,0.1); }
+        .calib-progress { width: 80%; height: 4px; background: #333; margin-top: 20px; border-radius: 2px; }
+        .calib-bar { height: 100%; width: 0%; background: #00ff88; transition: width 1s linear; }
 
         /* УВЕДОМЛЕНИЕ (ТОСТ) */
         .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff88; z-index: 150; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
@@ -153,12 +154,15 @@
 </head>
 <body>
 
-    <!-- ОКНО КАЛИБРОВКИ -->
+    <!-- ОКНО КАЛИБРОВКИ (30 СЕК) -->
     <div id="calibModal" class="calibration-overlay">
-        <h2 style="color:white; margin-bottom:10px;">🤫 ТИШИНА...</h2>
-        <p style="color:#aaa; max-width:80%; margin-bottom:30px;">Замеряем уровень шума вокруг.<br>Не говорите и не стучите.</p>
-        <div class="calib-circle" id="calibTimer">3</div>
-        <p style="color:#00ff88; font-size:12px; margin-top:20px;">Настройка микрофона...</p>
+        <h2 style="color:white; margin-bottom:5px;">🥊 БЕЙ ПО МЯЧУ!</h2>
+        <p style="color:#aaa; max-width:80%; font-size:14px; margin-bottom:20px;">Набивай в обычном ритме 30 секунд.<br>Мы настроим микрофон под твой удар.</p>
+        
+        <div class="calib-circle" id="calibTimer">30</div>
+        
+        <div class="calib-progress"><div class="calib-bar" id="calibBar"></div></div>
+        <p style="color:#666; font-size:12px; margin-top:15px;">Анализ шума и ударов...</p>
     </div>
 
     <!-- ТОСТ-УВЕДОМЛЕНИЕ -->
@@ -191,7 +195,7 @@
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">SMART START</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">SMART START 2.0</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -234,13 +238,12 @@
 
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
             
-            <!-- КНОПКА КАЛИБРОВКИ (ГЛАВНАЯ ФИШКА) -->
-            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 АВТО-КАЛИБРОВКА</button>
+            <!-- КНОПКА КАЛИБРОВКИ -->
+            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА (30 сек)</button>
 
             <label style="font-size:12px; color:#ccc;">Порог (Ручной): <span id="sensVal">20</span></label>
             <input type="range" id="sensRange" min="5" max="100" value="20" oninput="updateSens(this.value)">
             
-            <!-- КНОПКА СБРОСА -->
             <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 13</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
@@ -251,12 +254,11 @@
         
         <div class="score-circle" id="scoreDisplay">0</div>
         
-        <!-- ВИЗУАЛИЗАТОР ГРОМКОСТИ С ЦИФРАМИ -->
+        <!-- ВИЗУАЛИЗАТОР -->
         <div class="volume-meter">
             <div class="volume-bar" id="micLevel"></div>
             <div class="volume-threshold" id="micThresh"></div>
         </div>
-        <!-- ИНФО В РЕАЛЬНОМ ВРЕМЕНИ -->
         <div class="last-hit-info">
             ШУМ: <span id="noiseVal" style="color:#888;">0</span> 
             | ПИК: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span>
@@ -303,8 +305,8 @@
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 120; // 120ms
-        let SENSITIVITY = 13; // ВАШ ЛЮБИМЫЙ ДЕФОЛТ
+        const MIN_HIT_DELAY = 140; // ОПТИМАЛЬНОЕ ВРЕМЯ МЕЖДУ УДАРАМИ
+        let SENSITIVITY = 13; // ДЕФОЛТ
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
@@ -314,6 +316,9 @@
         let metronomeInterval;
         let totalHits = 0;
         let personalBest = 0;
+        
+        // ФЛАГ ГОТОВНОСТИ (ВАЖНО ДЛЯ СЧЕТЧИКА)
+        let isReadyForHit = true;
         
         // НАСТРОЙКИ
         let isSoundOn = true;
@@ -348,25 +353,22 @@
 
             if (localStorage.getItem('box_auth') === 'true') {
                 showScreen('screen-game');
-                showToast(); // ПОКАЗЫВАЕМ ПОДСКАЗКУ
+                showToast(); 
             }
         };
         
-        // --- ТОСТ ---
         function showToast() {
             const t = document.getElementById('toast');
             t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 4000);
         }
 
-        // --- АВТО-КАЛИБРОВКА ---
+        // --- АВТО-КАЛИБРОВКА (30 СЕК) ---
         async function startAutoCalibration() {
-            // Закрываем настройки
             document.getElementById('settingsPanel').style.display = 'none';
             document.getElementById('calibModal').style.display = 'flex';
             
             try {
-                // Инициализация звука
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') await audioCtx.resume();
                 
@@ -375,45 +377,63 @@
                 const mic = audioCtx.createMediaStreamSource(stream); 
                 const script = audioCtx.createScriptProcessor(2048, 1, 1);
                 
-                // Глушим выход
                 const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
                 mic.connect(analyser); analyser.connect(script); script.connect(zeroGain); zeroGain.connect(audioCtx.destination);
                 
-                let maxNoise = 0;
-                let timeLeft = 3;
+                let calibrationSamples = [];
+                let timeLeft = 30; // 30 СЕКУНД
                 
                 const countInt = setInterval(() => {
                     timeLeft--;
                     document.getElementById('calibTimer').innerText = timeLeft;
+                    document.getElementById('calibBar').style.width = ((30 - timeLeft) / 30 * 100) + "%";
                     if(timeLeft <= 0) clearInterval(countInt);
                 }, 1000);
 
-                // Слушаем 3 секунды
+                // Собираем данные
                 script.onaudioprocess = function() {
                     const buf = new Uint8Array(analyser.frequencyBinCount);
                     analyser.getByteTimeDomainData(buf);
                     let sum = 0;
                     for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
-                    // Нормализация (примерно 0-100)
-                    let val = Math.floor(rms); 
-                    if (val > maxNoise) maxNoise = val;
+                    calibrationSamples.push(Math.floor(rms));
                 };
 
-                // Финиш через 3 сек
+                // ФИНИШ КАЛИБРОВКИ
                 setTimeout(() => {
                     script.disconnect();
                     mic.disconnect();
-                    // РАСЧЕТ: ШУМ + 15 (ЗАПАС)
-                    let newSens = maxNoise + 15;
-                    if(newSens < 10) newSens = 10; // Не ниже 10
-                    if(newSens > 60) newSens = 60; // Не выше 60
                     
-                    updateSens(newSens);
-                    alert(`Готово! Шум был: ${maxNoise}. Ставлю порог: ${newSens}`);
+                    // АНАЛИЗ ДАННЫХ
+                    if (calibrationSamples.length > 0) {
+                        // 1. Средний уровень шума (берем все данные)
+                        let sumAll = calibrationSamples.reduce((a, b) => a + b, 0);
+                        let avgLevel = sumAll / calibrationSamples.length;
+                        
+                        // 2. Пики (Удары) - берем топ 10% самых громких звуков
+                        calibrationSamples.sort((a, b) => a - b);
+                        let topIndex = Math.floor(calibrationSamples.length * 0.9);
+                        let peakLevel = calibrationSamples[calibrationSamples.length - 1]; // Максимум
+                        
+                        // ФОРМУЛА: Среднее между шумом и пиком
+                        // Пример: Шум 10, Пик 60. Разница 50. Берем 30% от разницы + шум.
+                        // Sens = 10 + (60 - 10) * 0.3 = 25.
+                        let newSens = avgLevel + (peakLevel - avgLevel) * 0.25;
+                        
+                        // Защита от экстремальных значений
+                        if(newSens < 10) newSens = 10;
+                        if(newSens > 60) newSens = 60;
+                        
+                        let finalSens = Math.floor(newSens);
+                        
+                        updateSens(finalSens);
+                        alert(`Калибровка завершена!\nСредний шум: ${Math.floor(avgLevel)}\nПик удара: ${peakLevel}\n\nУстановлен порог: ${finalSens}`);
+                    }
+                    
                     document.getElementById('calibModal').style.display = 'none';
                     
-                }, 3000);
+                }, 30000); // 30000 мс = 30 сек
 
             } catch (e) {
                 alert("Ошибка: Разрешите микрофон для калибровки!");
@@ -493,19 +513,14 @@
         
         function updateSens(val) { 
             SENSITIVITY = parseInt(val); 
-            
-            document.getElementById('sensVal').innerText = SENSITIVITY;
+            document.getElementById('sensVal').innerText = SENSITIVITY; 
             document.getElementById('sensRange').value = SENSITIVITY;
-            
-            // СИНХРОНИЗАЦИЯ ПОЛОСКИ
             const percent = Math.min(SENSITIVITY * 1.5, 100);
-            const thresh = document.getElementById('micThresh');
-            if(thresh) thresh.style.left = percent + "%";
-            
+            document.getElementById('micThresh').style.left = percent + "%";
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { updateSens(13); } // 13 - ВАШ ВЫБОР
+        function setRecommended() { updateSens(13); } 
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
         function openReviewLink(url) { 
@@ -594,6 +609,7 @@
                 isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
                 timeLeft = (currentMode === 'survival') ? 10 : 60;
                 document.getElementById('timer').innerText = timeLeft;
+                isReadyForHit = true; // Сброс триггера
 
                 if (timerInterval) clearInterval(timerInterval);
                 if (metronomeInterval) clearInterval(metronomeInterval);
@@ -611,7 +627,7 @@
                     } 
                 }, 1000);
 
-                // --- АЛГОРИТМ RMS WAVEFORM ---
+                // --- АЛГОРИТМ RMS WAVEFORM (ИСПРАВЛЕННЫЙ) ---
                 script.onaudioprocess = function() {
                     if(!isRunning) return;
                     
@@ -619,30 +635,52 @@
                     analyser.getByteTimeDomainData(buf);
                     
                     let sum = 0;
-                    for (let i = 0; i < buf.length; i++) {
-                        let x = buf[i] - 128;
-                        sum += x * x;
-                    }
+                    for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
-                    
-                    // Визуализация
                     let val = Math.floor(rms); 
-                    // ШУМОДАВ (GATE) - ниже 5 считаем нулем
-                    if (val < 5) val = 0;
+                    if (val < 5) val = 0; // Шумодав
 
-                    const visual = Math.min(val * 1.5, 100);
+                    // Визуализация
+                    const visual = Math.min(val * 2, 100);
                     const barEl = document.getElementById('micLevel');
                     barEl.style.width = visual + "%";
                     
                     document.getElementById('lastHitInfo').innerText = "ПИК: " + val;
                     document.getElementById('noiseVal').innerText = val;
 
-                    // --- ЛОГИКА ---
-                    if (val > SENSITIVITY) {
-                        const now = Date.now();
-                        if(now - lastHitTime > MIN_HIT_DELAY) {
-                            score++; registerHitVisual();
-                            lastHitTime = now;
+                    // --- ЛОГИКА ТРИГГЕРА ШМИТТА (ИСПРАВЛЕННАЯ) ---
+                    if (isReadyForHit) {
+                        // Полоска зеленая - ГОТОВ
+                        barEl.classList.remove('locked');
+                        
+                        // Ждем удара ВЫШЕ ПОРОГА
+                        if (val > SENSITIVITY) {
+                            score++; 
+                            registerHitVisual();
+                            
+                            isReadyForHit = false; // БЛОКИРУЕМ
+                            barEl.classList.add('locked');
+                            
+                            // Задержка на повторный удар (быстро, но не мгновенно)
+                            setTimeout(() => {
+                                // ПРИНУДИТЕЛЬНАЯ РАЗБЛОКИРОВКА ЧЕРЕЗ 1 СЕК (НА ВСЯКИЙ СЛУЧАЙ)
+                                // Но основная разблокировка - по уровню шума ниже
+                            }, 1000);
+                        }
+                    } else {
+                        // МЫ В РЕЖИМЕ БЛОКИРОВКИ (УДАР БЫЛ)
+                        // Ждем падения громкости до СБРОСА (Порог - 5)
+                        // Если порог 13, то сброс будет на 8.
+                        // Если шум 10, то сброс никогда не наступит!
+                        // ПОЭТОМУ: Сброс должен быть ВЫШЕ шума, но НИЖЕ пика.
+                        
+                        // Сделаем динамический сброс: 80% от порога.
+                        let resetLevel = SENSITIVITY * 0.8;
+                        if (resetLevel < 5) resetLevel = 5;
+
+                        if (val < resetLevel) {
+                             isReadyForHit = true; // Снова готов
+                             barEl.classList.remove('locked');
                         }
                     }
                 }
