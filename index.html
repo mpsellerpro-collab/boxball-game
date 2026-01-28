@@ -57,7 +57,7 @@
         .volume-bar {
             height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
         }
-        .volume-bar.locked { background: #555; }
+        .volume-bar.locked { background: #ff0055; } /* Красный = Ждем */
         
         .volume-threshold {
             position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5;
@@ -500,7 +500,7 @@
             const val = document.getElementById('passInput').value.trim();
             if(VALID_CODES.includes(val)) { 
                 localStorage.setItem('box_auth', 'true'); 
-                showScreen('screen-game');
+                showScreen('screen-game'); 
                 showToast(); 
             } 
             else { document.getElementById('errorMsg').style.display = 'block'; }
@@ -513,14 +513,19 @@
         
         function updateSens(val) { 
             SENSITIVITY = parseInt(val); 
-            document.getElementById('sensVal').innerText = SENSITIVITY; 
+            
+            document.getElementById('sensVal').innerText = SENSITIVITY;
             document.getElementById('sensRange').value = SENSITIVITY;
+            
+            // СИНХРОНИЗАЦИЯ ПОЛОСКИ
             const percent = Math.min(SENSITIVITY * 1.5, 100);
-            document.getElementById('micThresh').style.left = percent + "%";
+            const thresh = document.getElementById('micThresh');
+            if(thresh) thresh.style.left = percent + "%";
+            
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { updateSens(13); } 
+        function setRecommended() { updateSens(13); } // 13 - ВАШ ВЫБОР
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
         function openReviewLink(url) { 
@@ -663,22 +668,18 @@
                             
                             // Задержка на повторный удар (быстро, но не мгновенно)
                             setTimeout(() => {
-                                // ПРИНУДИТЕЛЬНАЯ РАЗБЛОКИРОВКА ЧЕРЕЗ 1 СЕК (НА ВСЯКИЙ СЛУЧАЙ)
-                                // Но основная разблокировка - по уровню шума ниже
-                            }, 1000);
+                                // ПРИНУДИТЕЛЬНАЯ РАЗБЛОКИРОВКА ЧЕРЕЗ 400мс
+                                // Если за 400мс не стало тихо, все равно считаем, что можно бить
+                                isReadyForHit = true;
+                                barEl.classList.remove('locked');
+                            }, 400); // 400мс - это примерно 2.5 удара в секунду, быстрее человек не бьет
                         }
                     } else {
-                        // МЫ В РЕЖИМЕ БЛОКИРОВКИ (УДАР БЫЛ)
-                        // Ждем падения громкости до СБРОСА (Порог - 5)
-                        // Если порог 13, то сброс будет на 8.
-                        // Если шум 10, то сброс никогда не наступит!
-                        // ПОЭТОМУ: Сброс должен быть ВЫШЕ шума, но НИЖЕ пика.
+                        // Полоска красная - БЛОК (ЖДЕМ ТИШИНЫ)
+                        barEl.classList.add('locked');
                         
-                        // Сделаем динамический сброс: 80% от порога.
-                        let resetLevel = SENSITIVITY * 0.8;
-                        if (resetLevel < 5) resetLevel = 5;
-
-                        if (val < resetLevel) {
+                        // Ждем падения громкости до 80% от порога (БЫСТРАЯ ПЕРЕЗАРЯДКА)
+                        if (val < (SENSITIVITY * 0.8)) {
                              isReadyForHit = true; // Снова готов
                              barEl.classList.remove('locked');
                         }
