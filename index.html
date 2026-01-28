@@ -51,15 +51,17 @@
         
         /* Визуализатор громкости */
         .volume-meter {
-            width: 200px; height: 6px; background: #333; border-radius: 3px; margin-top: 15px;
+            width: 200px; height: 8px; background: #333; border-radius: 4px; margin-top: 15px;
             position: relative; overflow: hidden;
         }
         .volume-bar {
-            height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
+            height: 100%; background: #00ff88; width: 0%; transition: width 0.05s, background 0.2s;
         }
+        .volume-bar.locked { background: #ff0055; } /* Красный когда занят */
+        
         .volume-threshold {
-            position: absolute; top: 0; bottom: 0; width: 2px; background: #ff0055; z-index: 5;
-            left: 20%; /* Будет меняться JS */
+            position: absolute; top: 0; bottom: 0; width: 2px; background: white; z-index: 5;
+            left: 20%; box-shadow: 0 0 5px white;
         }
         
         @keyframes shake-anim {
@@ -87,7 +89,7 @@
 
         /* НАСТРОЙКИ */
         .settings-panel { background: rgba(30,30,30,0.95); border: 1px solid #555; padding: 20px; border-radius: 15px; margin-bottom: 20px; width: 85%; max-width: 300px; display: none; z-index: 10; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); }
+        input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); cursor: pointer; }
         
         .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; color: #ccc; }
         .toggle-switch { width: 40px; height: 20px; background: #555; border-radius: 10px; position: relative; cursor: pointer; }
@@ -268,8 +270,8 @@
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 180;
-        let SENSITIVITY = 20; // ОПТИМАЛЬНЫЙ СТАРТ
+        const MIN_HIT_DELAY = 140; 
+        let SENSITIVITY = 20; 
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
@@ -298,9 +300,12 @@
             
             const savedSens = localStorage.getItem('box_sens');
             if(savedSens) { 
-                updateSens(savedSens); // Применяем сохраненное
+                SENSITIVITY = parseInt(savedSens);
+                document.getElementById('sensRange').value = SENSITIVITY;
+                updateSensUI(SENSITIVITY);
             } else {
-                updateSens(20); // Дефолт
+                document.getElementById('sensRange').value = 20;
+                updateSensUI(20);
             }
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
@@ -384,19 +389,26 @@
         function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
         function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
         
+        // ФУНКЦИЯ ОБНОВЛЕНИЯ БЕЗ БЛОКИРОВКИ ПОЛЗУНКА
         function updateSens(val) { 
             SENSITIVITY = parseInt(val); 
-            document.getElementById('sensVal').innerText = SENSITIVITY; 
-            document.getElementById('sensRange').value = SENSITIVITY;
-            
-            // Обновляем позицию красной черты на визуализаторе
-            const percent = Math.min(SENSITIVITY, 100);
-            document.getElementById('micThresh').style.left = percent + "%";
-            
+            updateSensUI(SENSITIVITY);
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
+
+        function updateSensUI(val) {
+            document.getElementById('sensVal').innerText = val; 
+            
+            // Обновляем порог на полоске
+            const percent = Math.min(val, 100);
+            const thresh = document.getElementById('micThresh');
+            if(thresh) thresh.style.left = percent + "%";
+        }
         
-        function setRecommended() { updateSens(20); }
+        function setRecommended() { 
+            document.getElementById('sensRange').value = 20;
+            updateSens(20); 
+        }
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
         function openReviewLink(url) { 
@@ -454,6 +466,19 @@
             }
         }
 
+        function launchConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            for(let i=0; i<30; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random()*100 + 'vw';
+                c.style.background = colors[Math.floor(Math.random()*colors.length)];
+                c.style.animationDuration = (Math.random()*2+2) + 's';
+                document.body.appendChild(c);
+                setTimeout(()=>c.remove(), 4000);
+            }
+        }
+
         const startBtn = document.getElementById('startBtn');
         startBtn.addEventListener('click', async () => {
             if(isRunning) return;
@@ -498,10 +523,14 @@
                     
                     // ВИЗУАЛИЗАЦИЯ
                     const barW = Math.min(avg * 2, 100);
-                    document.getElementById('micLevel').style.width = barW + "%";
+                    const barEl = document.getElementById('micLevel');
+                    barEl.style.width = barW + "%";
 
                     // АЛГОРИТМ (ТРИГГЕР ШМИТТА)
                     if (!isClipping) {
+                        // Полоска зеленая - ГОТОВ
+                        barEl.classList.remove('locked');
+                        
                         // Ждем удара
                         if (avg > SENSITIVITY) {
                             // УДАР!
@@ -509,13 +538,16 @@
                             if(now - lastHitTime > MIN_HIT_DELAY) {
                                 score++; registerHitVisual();
                                 lastHitTime = now;
-                                isClipping = true; // Блокируем, пока не станет тихо
+                                isClipping = true; // Блокируем
                             }
                         }
                     } else {
-                        // Ждем тишины (50% от чувствительности)
-                        if (avg < (SENSITIVITY * 0.5)) {
-                            isClipping = false; // Готовы к новому удару
+                        // Полоска красная - БЛОК (ЖДЕМ ТИШИНЫ)
+                        barEl.classList.add('locked');
+                        
+                        // Ждем падения громкости до 75% от порога (БЫСТРАЯ ПЕРЕЗАРЯДКА)
+                        if (avg < (SENSITIVITY * 0.75)) {
+                            isClipping = false; // Снова готов
                         }
                     }
                 }
