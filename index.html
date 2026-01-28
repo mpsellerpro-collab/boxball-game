@@ -142,7 +142,6 @@
         /* Визуализатор громкости */
         .volume-meter { width: 240px; height: 16px; background: #222; border-radius: 8px; margin-top: 15px; position: relative; overflow: hidden; border: 1px solid #444; }
         .volume-bar { height: 100%; background: #00ff88; width: 0%; transition: width 0.05s; }
-        .volume-bar.locked { background: #555; }
         .volume-threshold { position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5; left: 35%; box-shadow: 0 0 8px #ff0055; transition: left 0.3s; }
         .last-hit-info { font-size: 12px; color: #aaa; margin-top: 8px; font-family: monospace; font-weight: bold; }
     </style>
@@ -230,14 +229,15 @@
             </div>
 
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
-            
+
             <!-- КНОПКА КАЛИБРОВКИ -->
             <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА (30 сек)</button>
-
-            <label style="font-size:12px; color:#ccc;">Порог (Ручной): <span id="sensVal">13</span></label>
-            <input type="range" id="sensRange" min="2" max="100" value="13" oninput="updateSens(this.value)">
             
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 13</button>
+            <label style="font-size:12px; color:#ccc;">Порог (Ручной): <span id="sensVal">20</span></label>
+            <input type="range" id="sensRange" min="2" max="100" value="20" oninput="updateSens(this.value)">
+            
+            <!-- КНОПКА СБРОСА -->
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 20</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
             
@@ -253,8 +253,7 @@
             <div class="volume-threshold" id="micThresh"></div>
         </div>
         <div class="last-hit-info">
-            ШУМ: <span id="noiseVal" style="color:#888;">0</span> 
-            | ПИК: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span>
+            ПИК: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span>
         </div>
         
         <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
@@ -299,7 +298,8 @@
 
     <script>
         const MIN_HIT_DELAY = 150; // Пауза 150мс
-        let SENSITIVITY = 13; // ДЕФОЛТ 13
+        let SENSITIVITY = 20; // ДЕФОЛТ 20
+        
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
@@ -309,9 +309,6 @@
         let metronomeInterval;
         let totalHits = 0;
         let personalBest = 0;
-        
-        // ФЛАГ ГОТОВНОСТИ (ВАЖНО ДЛЯ СЧЕТЧИКА)
-        let isReadyForHit = true;
         
         // НАСТРОЙКИ
         let isSoundOn = true;
@@ -332,7 +329,7 @@
             if(savedSens) { 
                 updateSens(savedSens); 
             } else {
-                updateSens(13); // Стартовое значение 13
+                updateSens(20); 
             }
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
@@ -390,7 +387,7 @@
                     let sum = 0;
                     for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
-                    calibrationSamples.push(Math.floor(rms));
+                    calibrationSamples.push(Math.floor(rms * 1.5)); // Используем ту же формулу с бустом
                 };
 
                 // ФИНИШ КАЛИБРОВКИ
@@ -406,7 +403,6 @@
                         
                         // 2. Пики (Удары) - берем топ 10% самых громких звуков
                         calibrationSamples.sort((a, b) => a - b);
-                        let topIndex = Math.floor(calibrationSamples.length * 0.9);
                         let peakLevel = calibrationSamples[calibrationSamples.length - 1]; // Максимум
                         
                         // ФОРМУЛА: Среднее между шумом и пиком
@@ -506,8 +502,7 @@
         
         function updateSens(val) { 
             SENSITIVITY = parseInt(val); 
-            
-            document.getElementById('sensVal').innerText = SENSITIVITY;
+            document.getElementById('sensVal').innerText = SENSITIVITY; 
             document.getElementById('sensRange').value = SENSITIVITY;
             
             // СИНХРОНИЗАЦИЯ ПОЛОСКИ
@@ -518,7 +513,7 @@
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { updateSens(13); } 
+        function setRecommended() { updateSens(20); } 
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
         function openReviewLink(url) { 
@@ -607,7 +602,6 @@
                 isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
                 timeLeft = (currentMode === 'survival') ? 10 : 60;
                 document.getElementById('timer').innerText = timeLeft;
-                isReadyForHit = true; // Сброс триггера
 
                 if (timerInterval) clearInterval(timerInterval);
                 if (metronomeInterval) clearInterval(metronomeInterval);
@@ -625,7 +619,7 @@
                     } 
                 }, 1000);
 
-                // --- АЛГОРИТМ RMS WAVEFORM (С АВТО-СБРОСОМ) ---
+                // --- АЛГОРИТМ RMS WAVEFORM (С УСИЛЕНИЕМ) ---
                 script.onaudioprocess = function() {
                     if(!isRunning) return;
                     
@@ -635,42 +629,24 @@
                     let sum = 0;
                     for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
-                    let val = Math.floor(rms); 
+                    // УСИЛЕНИЕ x2 (Чтобы слышать тихие удары)
+                    let val = Math.floor(rms * 2); 
                     
-                    // Визуализация
+                    // ВИЗУАЛИЗАЦИЯ
                     const visual = Math.min(val * 1.5, 100);
                     const barEl = document.getElementById('micLevel');
                     barEl.style.width = visual + "%";
                     
                     document.getElementById('lastHitInfo').innerText = "ПИК: " + val;
-                    document.getElementById('noiseVal').innerText = val;
 
-                    // --- ЛОГИКА ---
-                    if (isReadyForHit) {
-                        barEl.classList.remove('locked');
-                        
-                        if (val > SENSITIVITY) {
+                    // ПРОСТОЙ АЛГОРИТМ БЕЗ БЛОКИРОВКИ
+                    if (val > SENSITIVITY) {
+                        const now = Date.now();
+                        // Если прошло время задержки
+                        if(now - lastHitTime > MIN_HIT_DELAY) {
                             score++; 
                             registerHitVisual();
-                            
-                            isReadyForHit = false; // Блокируем
-                            barEl.classList.add('locked');
-                            
-                            // АВТО-СБРОС через 300мс (Предохранитель!)
-                            setTimeout(() => {
-                                if(!isReadyForHit) {
-                                    isReadyForHit = true;
-                                    barEl.classList.remove('locked');
-                                }
-                            }, 300);
-                        }
-                    } else {
-                        barEl.classList.add('locked');
-                        
-                        // Сброс по тишине (80% от порога - мягкий сброс)
-                        if (val < (SENSITIVITY * 0.8)) {
-                             isReadyForHit = true; 
-                             barEl.classList.remove('locked');
+                            lastHitTime = now;
                         }
                     }
                 }
