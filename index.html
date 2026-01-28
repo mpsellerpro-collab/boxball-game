@@ -61,7 +61,7 @@
         
         .volume-threshold {
             position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5;
-            left: 35%; box-shadow: 0 0 8px #ff0055;
+            left: 35%; box-shadow: 0 0 8px #ff0055; transition: left 0.3s;
         }
         
         .last-hit-info {
@@ -126,6 +126,15 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
         .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid var(--primary); text-align: center; width: 85%; max-width: 320px; max-height: 80vh; overflow-y: auto; }
 
+        /* КАЛИБРОВКА */
+        .calibration-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .calib-circle { width: 150px; height: 150px; border: 5px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #00ff88; animation: pulse 1s infinite; margin-bottom: 20px; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* УВЕДОМЛЕНИЕ (ТОСТ) */
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff88; z-index: 150; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+
         .career-box { margin-bottom: 20px; padding: 10px; border-top: 1px solid #333; border-bottom: 1px solid #333; width: 100%; }
         .career-text { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         .career-num { font-size: 24px; color: #fff; font-weight: 900; }
@@ -143,6 +152,17 @@
     </style>
 </head>
 <body>
+
+    <!-- ОКНО КАЛИБРОВКИ -->
+    <div id="calibModal" class="calibration-overlay">
+        <h2 style="color:white; margin-bottom:10px;">🤫 ТИШИНА...</h2>
+        <p style="color:#aaa; max-width:80%; margin-bottom:30px;">Замеряем уровень шума вокруг.<br>Не говорите и не стучите.</p>
+        <div class="calib-circle" id="calibTimer">3</div>
+        <p style="color:#00ff88; font-size:12px; margin-top:20px;">Настройка микрофона...</p>
+    </div>
+
+    <!-- ТОСТ-УВЕДОМЛЕНИЕ -->
+    <div id="toast" class="toast">📢 Новое место? Сделай калибровку в настройках!</div>
 
     <!-- ОКНО ОТЗЫВА -->
     <div id="reviewModal" class="modal-overlay">
@@ -171,7 +191,7 @@
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">FINAL VERSION</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">SMART START</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -213,12 +233,15 @@
             </div>
 
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
+            
+            <!-- КНОПКА КАЛИБРОВКИ (ГЛАВНАЯ ФИШКА) -->
+            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 АВТО-КАЛИБРОВКА</button>
 
-            <label style="font-size:12px; color:#ccc;">Порог (Красная черта): <span id="sensVal">35</span></label>
-            <input type="range" id="sensRange" min="10" max="100" value="35" oninput="updateSens(this.value)">
+            <label style="font-size:12px; color:#ccc;">Порог (Ручной): <span id="sensVal">20</span></label>
+            <input type="range" id="sensRange" min="5" max="100" value="20" oninput="updateSens(this.value)">
             
             <!-- КНОПКА СБРОСА -->
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (35)</button>
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 13</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
             
@@ -236,7 +259,7 @@
         <!-- ИНФО В РЕАЛЬНОМ ВРЕМЕНИ -->
         <div class="last-hit-info">
             ШУМ: <span id="noiseVal" style="color:#888;">0</span> 
-            | ПОСЛЕДНИЙ ПИК: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span>
+            | ПИК: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span>
         </div>
         
         <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
@@ -280,8 +303,8 @@
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 300; // 300ms = Надежная задержка
-        let SENSITIVITY = 35; // НОВЫЙ ДЕФОЛТ (под шум iPhone)
+        const MIN_HIT_DELAY = 120; // 120ms
+        let SENSITIVITY = 13; // ВАШ ЛЮБИМЫЙ ДЕФОЛТ
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
@@ -291,9 +314,6 @@
         let metronomeInterval;
         let totalHits = 0;
         let personalBest = 0;
-        
-        // ФЛАГ ГОТОВНОСТИ (GATE)
-        let readyForNextHit = true;
         
         // НАСТРОЙКИ
         let isSoundOn = true;
@@ -314,7 +334,7 @@
             if(savedSens) { 
                 updateSens(savedSens); 
             } else {
-                updateSens(35); // СТАРТОВАЯ
+                updateSens(13); // Стартовое значение 13
             }
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
@@ -326,8 +346,80 @@
             const savedTheme = localStorage.getItem('box_theme');
             if(savedTheme && THEMES[savedTheme]) applyTheme(savedTheme);
 
-            if (localStorage.getItem('box_auth') === 'true') showScreen('screen-game');
+            if (localStorage.getItem('box_auth') === 'true') {
+                showScreen('screen-game');
+                showToast(); // ПОКАЗЫВАЕМ ПОДСКАЗКУ
+            }
         };
+        
+        // --- ТОСТ ---
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 4000);
+        }
+
+        // --- АВТО-КАЛИБРОВКА ---
+        async function startAutoCalibration() {
+            // Закрываем настройки
+            document.getElementById('settingsPanel').style.display = 'none';
+            document.getElementById('calibModal').style.display = 'flex';
+            
+            try {
+                // Инициализация звука
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const analyser = audioCtx.createAnalyser(); 
+                const mic = audioCtx.createMediaStreamSource(stream); 
+                const script = audioCtx.createScriptProcessor(2048, 1, 1);
+                
+                // Глушим выход
+                const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
+                mic.connect(analyser); analyser.connect(script); script.connect(zeroGain); zeroGain.connect(audioCtx.destination);
+                
+                let maxNoise = 0;
+                let timeLeft = 3;
+                
+                const countInt = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('calibTimer').innerText = timeLeft;
+                    if(timeLeft <= 0) clearInterval(countInt);
+                }, 1000);
+
+                // Слушаем 3 секунды
+                script.onaudioprocess = function() {
+                    const buf = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteTimeDomainData(buf);
+                    let sum = 0;
+                    for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
+                    let rms = Math.sqrt(sum / buf.length);
+                    // Нормализация (примерно 0-100)
+                    let val = Math.floor(rms); 
+                    if (val > maxNoise) maxNoise = val;
+                };
+
+                // Финиш через 3 сек
+                setTimeout(() => {
+                    script.disconnect();
+                    mic.disconnect();
+                    // РАСЧЕТ: ШУМ + 15 (ЗАПАС)
+                    let newSens = maxNoise + 15;
+                    if(newSens < 10) newSens = 10; // Не ниже 10
+                    if(newSens > 60) newSens = 60; // Не выше 60
+                    
+                    updateSens(newSens);
+                    alert(`Готово! Шум был: ${maxNoise}. Ставлю порог: ${newSens}`);
+                    document.getElementById('calibModal').style.display = 'none';
+                    
+                }, 3000);
+
+            } catch (e) {
+                alert("Ошибка: Разрешите микрофон для калибровки!");
+                document.getElementById('calibModal').style.display = 'none';
+            }
+        }
 
         // --- ТЕМЫ ---
         function openSkins() {
@@ -388,7 +480,8 @@
             const val = document.getElementById('passInput').value.trim();
             if(VALID_CODES.includes(val)) { 
                 localStorage.setItem('box_auth', 'true'); 
-                showScreen('screen-game'); 
+                showScreen('screen-game');
+                showToast(); 
             } 
             else { document.getElementById('errorMsg').style.display = 'block'; }
         }
@@ -404,14 +497,15 @@
             document.getElementById('sensVal').innerText = SENSITIVITY;
             document.getElementById('sensRange').value = SENSITIVITY;
             
-            // СИНХРОНИЗАЦИЯ ПОЛОСКИ (МАСШТАБ)
+            // СИНХРОНИЗАЦИЯ ПОЛОСКИ
             const percent = Math.min(SENSITIVITY * 1.5, 100);
-            document.getElementById('micThresh').style.left = percent + "%";
+            const thresh = document.getElementById('micThresh');
+            if(thresh) thresh.style.left = percent + "%";
             
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { updateSens(35); }
+        function setRecommended() { updateSens(13); } // 13 - ВАШ ВЫБОР
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
         function openReviewLink(url) { 
@@ -500,9 +594,6 @@
                 isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
                 timeLeft = (currentMode === 'survival') ? 10 : 60;
                 document.getElementById('timer').innerText = timeLeft;
-                
-                // Сброс состояний
-                readyForNextHit = true;
 
                 if (timerInterval) clearInterval(timerInterval);
                 if (metronomeInterval) clearInterval(metronomeInterval);
@@ -535,34 +626,23 @@
                     let rms = Math.sqrt(sum / buf.length);
                     
                     // Визуализация
-                    const visual = Math.min(rms * 1.5, 100);
+                    let val = Math.floor(rms); 
+                    // ШУМОДАВ (GATE) - ниже 5 считаем нулем
+                    if (val < 5) val = 0;
+
+                    const visual = Math.min(val * 1.5, 100);
                     const barEl = document.getElementById('micLevel');
                     barEl.style.width = visual + "%";
                     
-                    // ЦИФРОВОЙ МОНИТОР
-                    document.getElementById('noiseVal').innerText = Math.floor(rms);
+                    document.getElementById('lastHitInfo').innerText = "ПИК: " + val;
+                    document.getElementById('noiseVal').innerText = val;
 
                     // --- ЛОГИКА ---
-                    if (readyForNextHit) {
-                        // Если ГРОМКО > ПОРОГА
-                        if (rms > SENSITIVITY) {
-                            score++; 
-                            registerHitVisual();
-                            document.getElementById('lastHitVal').innerText = Math.floor(rms); // Показываем силу
-                            
-                            readyForNextHit = false; // БЛОКИРУЕМ
-                            barEl.classList.add('locked');
-                            
-                            // Задержка на повторный удар
-                            setTimeout(() => {
-                                // Но разблокируем только если стало тихо!
-                            }, MIN_HIT_DELAY);
-                        }
-                    } else {
-                        // Ждем тишины (50% от порога)
-                        if (rms < (SENSITIVITY * 0.5)) {
-                             readyForNextHit = true;
-                             barEl.classList.remove('locked');
+                    if (val > SENSITIVITY) {
+                        const now = Date.now();
+                        if(now - lastHitTime > MIN_HIT_DELAY) {
+                            score++; registerHitVisual();
+                            lastHitTime = now;
                         }
                     }
                 }
