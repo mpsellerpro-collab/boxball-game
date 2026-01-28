@@ -7,17 +7,12 @@
     
     <!-- 👇 НАСТРОЙКИ 👇 -->
     <script>
-        // 1. Ссылка на Google Таблицу
         const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
-        
-        // 2. Ссылка на Правила
         const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА";
         
-        // 3. Артикулы Wildberries
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
         const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";    
         
-        // 4. Коды доступа
         const VALID_CODES = ["6433", "0309", "5528"];
         const CHANNEL_URL = "https://t.me/DUROV";
     </script>
@@ -54,12 +49,20 @@
             transition: border-color 0.1s; position: relative; z-index: 2;
         }
         
-        /* Визуализатор (КАНВАС) */
-        canvas#audioScope {
-            width: 240px; height: 40px; background: #222; border-radius: 6px; margin-top: 15px;
-            border: 1px solid #444;
+        /* Визуализатор громкости */
+        .volume-meter {
+            width: 240px; height: 16px; background: #222; border-radius: 8px; margin-top: 15px;
+            position: relative; overflow: hidden; border: 1px solid #444;
         }
-
+        .volume-bar {
+            height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
+        }
+        
+        .volume-threshold {
+            position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5;
+            left: 20%; box-shadow: 0 0 8px #ff0055; transition: left 0.2s; opacity: 0.8;
+        }
+        
         .last-hit-info {
             font-size: 12px; color: #aaa; margin-top: 8px; font-family: monospace; font-weight: bold;
         }
@@ -195,7 +198,7 @@
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">V15 (RAW AUDIO)</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">FILTERED AUDIO</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -241,11 +244,11 @@
             <!-- КНОПКА КАЛИБРОВКИ -->
             <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА (30 сек)</button>
             
-            <label style="font-size:12px; color:#ccc;">Порог (Ручной): <span id="sensVal">15</span></label>
-            <input type="range" id="sensRange" min="2" max="100" value="15" oninput="updateSens(this.value)">
+            <label style="font-size:12px; color:#ccc;">Порог (Ручной): <span id="sensVal">8</span></label>
+            <input type="range" id="sensRange" min="2" max="100" value="8" oninput="updateSens(this.value)">
             
             <!-- КНОПКА СБРОСА -->
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 13</button>
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 8</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
             
@@ -255,10 +258,13 @@
         
         <div class="score-circle" id="scoreDisplay">0</div>
         
-        <!-- ВИЗУАЛИЗАТОР (КАНВАС) -->
-        <canvas id="audioScope" width="240" height="40"></canvas>
+        <!-- ВИЗУАЛИЗАТОР ГРОМКОСТИ -->
+        <div class="volume-meter">
+            <div class="volume-bar" id="micLevel"></div>
+            <div class="volume-threshold" id="micThresh"></div>
+        </div>
         <div class="last-hit-info">
-            КРАСНАЯ ЛИНИЯ ДОЛЖНА БЫТЬ ВЫШЕ "ШУМА"
+            ПИК: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span>
         </div>
         
         <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
@@ -311,7 +317,7 @@
 
     <script>
         const MIN_HIT_DELAY = 110; // 0.11 сек (очень быстро)
-        let SENSITIVITY = 13; // ДЕФОЛТ 13
+        let SENSITIVITY = 8; // НОВЫЙ ДЕФОЛТ 8
         
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
@@ -343,7 +349,7 @@
             if(savedSens) { 
                 updateSens(savedSens); 
             } else {
-                updateSens(13); // Стартовое значение 13
+                updateSens(8); // Стартовое значение 8
             }
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
@@ -354,10 +360,6 @@
             
             const savedTheme = localStorage.getItem('box_theme');
             if(savedTheme && THEMES[savedTheme]) applyTheme(savedTheme);
-
-            // Настройка Канваса
-            const canvas = document.getElementById('audioScope');
-            canvasCtx = canvas.getContext('2d');
 
             if (localStorage.getItem('box_auth') === 'true') {
                 showScreen('screen-game');
@@ -380,15 +382,34 @@
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') await audioCtx.resume();
                 
-                const constraints = { audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false, latency: 0 } };
+                // СЫРОЙ СИГНАЛ
+                const constraints = {
+                    audio: {
+                        echoCancellation: false,
+                        autoGainControl: false,
+                        noiseSuppression: false,
+                        latency: 0
+                    }
+                };
+                
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
-                const analyser = audioCtx.createAnalyser(); 
                 const mic = audioCtx.createMediaStreamSource(stream); 
+                const analyser = audioCtx.createAnalyser(); 
                 const script = audioCtx.createScriptProcessor(2048, 1, 1);
                 
+                // ФИЛЬТР
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 180;
+
+                // ЦЕПОЧКА
+                mic.connect(filter);
+                filter.connect(analyser);
+                analyser.connect(script);
+                
                 const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
-                mic.connect(analyser); analyser.connect(script); script.connect(zeroGain); zeroGain.connect(audioCtx.destination);
+                script.connect(zeroGain); zeroGain.connect(audioCtx.destination);
                 
                 let calibrationSamples = [];
                 let timeLeft = 30;
@@ -411,7 +432,8 @@
 
                 setTimeout(() => {
                     script.disconnect();
-                    mic.disconnect();
+                    // Clean up graph
+                    mic.disconnect(); filter.disconnect(); analyser.disconnect(); zeroGain.disconnect();
                     
                     if (calibrationSamples.length > 0) {
                         let sumAll = calibrationSamples.reduce((a, b) => a + b, 0);
@@ -526,10 +548,12 @@
             SENSITIVITY = parseInt(val); 
             document.getElementById('sensVal').innerText = SENSITIVITY; 
             document.getElementById('sensRange').value = SENSITIVITY;
+            const percent = Math.min(SENSITIVITY * 2, 100); // Scale up for visual
+            document.getElementById('micThresh').style.left = percent + "%";
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { updateSens(13); } 
+        function setRecommended() { updateSens(8); } 
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
         function openReviewLink(url) { 
@@ -607,7 +631,7 @@
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') await audioCtx.resume();
                 
-                // ВАЖНО: ОТКЛЮЧАЕМ ШУМОДАВ, ЧТОБЫ ПОЛУЧИТЬ СЫРОЙ ЗВУК
+                // ВАЖНО: СЫРОЙ ЗВУК БЕЗ ОБРАБОТКИ
                 const constraints = {
                     audio: {
                         echoCancellation: false,
@@ -618,15 +642,27 @@
                 };
                 
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // ФИЛЬТР: LOW PASS 180Hz (Оставляем только глухие удары)
+                const mic = audioCtx.createMediaStreamSource(stream); 
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 180;
+                
                 const analyser = audioCtx.createAnalyser(); 
-                // Уменьшаем размер окна для более быстрой реакции
+                // Окно для анализа
                 analyser.fftSize = 512; 
                 
-                const mic = audioCtx.createMediaStreamSource(stream); 
-                const script = audioCtx.createScriptProcessor(1024, 1, 1); // 1024 - быстрее
+                const script = audioCtx.createScriptProcessor(1024, 1, 1);
                 
                 const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
-                mic.connect(analyser); analyser.connect(script); script.connect(zeroGain); zeroGain.connect(audioCtx.destination);
+                
+                // ЦЕПОЧКА: MIC -> FILTER -> ANALYSER -> SCRIPT -> OUT
+                mic.connect(filter);
+                filter.connect(analyser);
+                analyser.connect(script);
+                script.connect(zeroGain);
+                zeroGain.connect(audioCtx.destination);
                 
                 startBtn.style.display = 'none'; document.getElementById('settingsPanel').style.display = 'none';
                 document.querySelector('.mode-selector').style.opacity = '0.3';
@@ -664,13 +700,17 @@
                     let rms = Math.sqrt(sum / buf.length);
                     let val = Math.floor(rms); 
 
-                    // РИСУЕМ ГРАФИК
-                    drawWave(buf);
+                    // ВИЗУАЛИЗАЦИЯ
+                    const visual = Math.min(val * 2, 100);
+                    const barEl = document.getElementById('micLevel');
+                    barEl.style.width = visual + "%";
+                    
+                    document.getElementById('lastHitVal').innerText = val;
 
                     // ПРОСТОЙ АЛГОРИТМ
                     if (val > SENSITIVITY) {
                         const now = Date.now();
-                        // 110мс задержка = до 9 ударов в сек
+                        // Если прошло время задержки
                         if(now - lastHitTime > MIN_HIT_DELAY) {
                             score++; 
                             registerHitVisual();
@@ -680,35 +720,6 @@
                 }
             } catch(e) { alert("Ошибка: Разрешите микрофон!"); }
         });
-        
-        function drawWave(data) {
-            canvasCtx.fillStyle = '#222';
-            canvasCtx.fillRect(0, 0, 240, 40);
-            canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = '#00ff88';
-            canvasCtx.beginPath();
-            
-            // Рисуем линию порога (красная)
-            let yThresh = 40 - (SENSITIVITY / 50 * 40); 
-            canvasCtx.moveTo(0, yThresh);
-            canvasCtx.lineTo(240, yThresh);
-            canvasCtx.strokeStyle = '#ff0055';
-            canvasCtx.stroke();
-            
-            // Рисуем волну
-            canvasCtx.beginPath();
-            canvasCtx.strokeStyle = '#00ff88';
-            let sliceWidth = 240 * 1.0 / data.length;
-            let x = 0;
-            for(let i = 0; i < data.length; i++) {
-                let v = data[i] / 128.0;
-                let y = v * 20;
-                if(i === 0) canvasCtx.moveTo(x, y);
-                else canvasCtx.lineTo(x, y);
-                x += sliceWidth;
-            }
-            canvasCtx.stroke();
-        }
 
         function registerHitVisual() {
             const el = document.getElementById('scoreDisplay'); el.innerText = score; 
