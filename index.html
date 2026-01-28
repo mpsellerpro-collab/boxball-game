@@ -9,12 +9,8 @@
     <script>
         const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
         const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА";
-        
-        // Артикулы Wildberries
-        const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
-        const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";    
-        
-        const VALID_CODES = ["6433", "0309", "5528"];
+        const REVIEW_URL = "https://www.wildberries.ru/catalog/ВАШ_АРТИКУЛ/detail.aspx"; 
+        const SECRET_CODE = "BOX2025";
     </script>
     <!-- 👆 КОНЕЦ НАСТРОЕК 👆 -->
 
@@ -57,6 +53,7 @@
         .volume-bar {
             height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
         }
+        .volume-bar.locked { background: #555; }
         
         .volume-threshold {
             position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5;
@@ -242,7 +239,7 @@
             <input type="range" id="sensRange" min="2" max="100" value="15" oninput="updateSens(this.value)">
             
             <!-- КНОПКА СБРОСА -->
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 15</button>
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 13</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
             
@@ -302,8 +299,9 @@
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 150; // Пауза 150мс
-        let SENSITIVITY = 15; // ДЕФОЛТ
+        const MIN_HIT_DELAY = 200; // Пауза 200мс (безопасно для эхо)
+        let SENSITIVITY = 13; // ДЕФОЛТ
+        let isPlayingSound = false; // Блокировка от эха
         
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
@@ -334,7 +332,7 @@
             if(savedSens) { 
                 updateSens(savedSens); 
             } else {
-                updateSens(15); 
+                updateSens(13); // Стартовое значение 13
             }
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
@@ -393,8 +391,7 @@
                     let sum = 0;
                     for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
-                    // Boosted value
-                    let val = Math.floor(rms * 1.5); 
+                    let val = Math.floor(rms);
                     
                     // Разделяем: всё что тихо - это шум (меньше 10), всё что громко - возможные удары
                     if (val > 10) peakSamples.push(val);
@@ -416,13 +413,11 @@
                          peakSamples.sort((a,b)=>a-b);
                          avgHit = peakSamples[Math.floor(peakSamples.length/2)];
                     } else {
-                        // Если ударов не было, просто +20 к шуму
-                        avgHit = avgNoise + 20;
+                        avgHit = avgNoise + 20; // Дефолт если не били
                     }
 
-                    // Формула: Порог = Шум + 40% от разницы до удара
+                    // Формула: Порог = Шум + 40% от разницы
                     let newSens = avgNoise + (avgHit - avgNoise) * 0.4;
-                    // Мин порог 5, макс 60
                     if(newSens < 5) newSens = 5;
                     if(newSens > 60) newSens = 60;
                     
@@ -432,7 +427,7 @@
                     alert(`Калибровка завершена!\nШум: ${Math.floor(avgNoise)}, Удары: ${avgHit}\nУстановлен порог: ${final}`);
                     document.getElementById('calibModal').style.display = 'none';
                     
-                }, 30000); // 30000 мс = 30 сек
+                }, 30000);
 
             } catch (e) {
                 alert("Ошибка: Разрешите микрофон для калибровки!");
@@ -512,18 +507,14 @@
         
         function updateSens(val) { 
             SENSITIVITY = parseInt(val); 
-            
-            document.getElementById('sensVal').innerText = SENSITIVITY;
+            document.getElementById('sensVal').innerText = SENSITIVITY; 
             document.getElementById('sensRange').value = SENSITIVITY;
-            
-            // СИНХРОНИЗАЦИЯ ПОЛОСКИ (МАСШТАБ)
             const percent = Math.min(SENSITIVITY * 1.5, 100);
             document.getElementById('micThresh').style.left = percent + "%";
-            
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { updateSens(15); } 
+        function setRecommended() { updateSens(13); } 
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
         function openReviewLink(url) { 
@@ -561,6 +552,12 @@
 
         function playSound(type) {
             if (!isSoundOn) return;
+            
+            // Если играем звук, ставим флаг блокировки
+            isPlayingSound = true;
+            // Снимаем блокировку чуть позже, чем звук закончится (0.08с звук + запас)
+            setTimeout(() => { isPlayingSound = false; }, 200);
+
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
@@ -568,8 +565,9 @@
             if (type === 'hit') {
                 osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
                 osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime+0.1);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
-                osc.start(); osc.stop(audioCtx.currentTime+0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.08); // Короткий звук
+                osc.start(); osc.stop(audioCtx.currentTime+0.08);
             } else if (type === 'tick') {
                 osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
@@ -612,7 +610,7 @@
                 isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
                 timeLeft = (currentMode === 'survival') ? 10 : 60;
                 document.getElementById('timer').innerText = timeLeft;
-                
+
                 if (timerInterval) clearInterval(timerInterval);
                 if (metronomeInterval) clearInterval(metronomeInterval);
 
@@ -629,7 +627,7 @@
                     } 
                 }, 1000);
 
-                // --- АЛГОРИТМ RMS WAVEFORM (АРКАДНЫЙ С БУСТОМ) ---
+                // --- АЛГОРИТМ RMS WAVEFORM ---
                 script.onaudioprocess = function() {
                     if(!isRunning) return;
                     
@@ -639,25 +637,30 @@
                     let sum = 0;
                     for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
-                    
-                    // БУСТ СИГНАЛА: Умножаем на 1.5, чтобы слабые удары стали заметнее
+                    // Усиливаем x1.5 (Чувствительный буст)
                     let val = Math.floor(rms * 1.5); 
                     
-                    // Визуализация
-                    const visual = Math.min(val * 1.5, 100);
+                    // ВИЗУАЛИЗАЦИЯ
+                    const barW = Math.min(val * 1.5, 100);
                     const barEl = document.getElementById('micLevel');
-                    barEl.style.width = visual + "%";
+                    barEl.style.width = barW + "%";
                     
                     document.getElementById('lastHitVal').innerText = val;
 
-                    // ПРОСТОЙ И НАДЕЖНЫЙ АЛГОРИТМ
-                    // Если громкость > порога
+                    // БЛОКИРОВКА ОТ ЭХО (ВКЛЮЧАЕТСЯ ПОСЛЕ ЗВУКА)
+                    if (isPlayingSound) {
+                        barEl.classList.add('locked');
+                        return; // Выходим, не считаем удары
+                    } else {
+                        barEl.classList.remove('locked');
+                    }
+
+                    // ПРОСТОЙ АЛГОРИТМ
                     if (val > SENSITIVITY) {
                         const now = Date.now();
                         // Если прошло время задержки
                         if(now - lastHitTime > MIN_HIT_DELAY) {
                             score++; 
-                            
                             registerHitVisual();
                             lastHitTime = now;
                         }
