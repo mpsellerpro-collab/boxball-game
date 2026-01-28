@@ -7,8 +7,8 @@
     
     <!-- 👇 НАСТРОЙКИ 👇 -->
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkA8d8DIy994lgU70DGQ604EZ6e59kkEPm_Zhfaj8eG_QxmbwKltgFK5kRF3bl41_LzA/exec"; 
-        const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing";
+        const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
+        const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА";
         
         // Артикулы Wildberries
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
@@ -51,17 +51,16 @@
         
         /* Визуализатор громкости */
         .volume-meter {
-            width: 200px; height: 8px; background: #333; border-radius: 4px; margin-top: 15px;
-            position: relative; overflow: hidden;
+            width: 200px; height: 10px; background: #222; border-radius: 5px; margin-top: 15px;
+            position: relative; overflow: hidden; border: 1px solid #444;
         }
         .volume-bar {
             height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
         }
-        /* Убран locked стиль, так как мы убрали блокировку */
         
         .volume-threshold {
-            position: absolute; top: 0; bottom: 0; width: 2px; background: white; z-index: 5;
-            left: 10%; box-shadow: 0 0 5px white;
+            position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5;
+            left: 40%; box-shadow: 0 0 8px #ff0055;
         }
         
         @keyframes shake-anim {
@@ -210,11 +209,11 @@
 
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
 
-            <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">10</span></label>
-            <input type="range" id="sensRange" min="1" max="100" value="10" oninput="updateSens(this.value)">
+            <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">20</span></label>
+            <input type="range" id="sensRange" min="5" max="50" value="20" oninput="updateSens(this.value)">
             
             <!-- КНОПКА СБРОСА -->
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (10)</button>
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (20)</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
             
@@ -224,7 +223,7 @@
         
         <div class="score-circle" id="scoreDisplay">0</div>
         
-        <!-- ВИЗУАЛИЗАТОР ГРОМКОСТИ -->
+        <!-- ВИЗУАЛИЗАТОР ГРОМКОСТИ С ПРАВИЛЬНЫМ МАСШТАБОМ -->
         <div class="volume-meter">
             <div class="volume-bar" id="micLevel"></div>
             <div class="volume-threshold" id="micThresh"></div>
@@ -271,8 +270,8 @@
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 200; // Пауза 0.2с между ударами
-        let SENSITIVITY = 10; // ДЕФОЛТ: ОЧЕНЬ ЧУВСТВИТЕЛЬНЫЙ
+        const MIN_HIT_DELAY = 200; // 0.2с между ударами
+        let SENSITIVITY = 20; 
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
@@ -302,7 +301,7 @@
             if(savedSens) { 
                 updateSens(savedSens); 
             } else {
-                updateSens(10); // Устанавливаем дефолт при первом запуске
+                updateSens(20); // Дефолт 20
             }
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
@@ -386,22 +385,21 @@
         function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
         function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
         
-        // ФУНКЦИЯ ОБНОВЛЕНИЯ БЕЗ БЛОКИРОВКИ ПОЛЗУНКА
         function updateSens(val) { 
             SENSITIVITY = parseInt(val); 
             
             document.getElementById('sensVal').innerText = SENSITIVITY;
             document.getElementById('sensRange').value = SENSITIVITY;
             
-            // Обновляем порог на полоске
-            const percent = Math.min(SENSITIVITY, 100);
+            // СИНХРОНИЗАЦИЯ: Красная черта теперь точно там, где нужно (SENSITIVITY * 2)
+            const percent = Math.min(SENSITIVITY * 2, 100);
             const thresh = document.getElementById('micThresh');
             if(thresh) thresh.style.left = percent + "%";
             
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { updateSens(10); } // СБРОС НА 10
+        function setRecommended() { updateSens(20); }
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
         function openReviewLink(url) { 
@@ -513,15 +511,14 @@
                     let v = 0; for(let i=0; i<arr.length; i++) v+=arr[i];
                     let avg = v/arr.length;
                     
-                    // ВИЗУАЛИЗАЦИЯ
+                    // ВИЗУАЛИЗАЦИЯ (avg * 2 = 100% Scale)
                     const barW = Math.min(avg * 2, 100);
                     const barEl = document.getElementById('micLevel');
                     barEl.style.width = barW + "%";
 
-                    // ПРОСТОЙ АЛГОРИТМ: ЕСЛИ ГРОМКО -> УДАР
+                    // Простой алгоритм: Если громкость > порога
                     if (avg > SENSITIVITY) {
                         const now = Date.now();
-                        // Ждем пока пройдет 200 мс с прошлого удара
                         if(now - lastHitTime > MIN_HIT_DELAY) {
                             score++; registerHitVisual();
                             lastHitTime = now;
