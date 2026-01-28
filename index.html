@@ -9,13 +9,11 @@
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkA8d8DIy994lgU70DGQ604EZ6e59kkEPm_Zhfaj8eG_QxmbwKltgFK5kRF3bl41_LzA/exec"; 
         const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing";
-        const CHANNEL_URL = "https://t.me/DUROV";
         
         // Артикулы Wildberries
-        const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; // Мяч 60 гр
-        const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";    // 3 мяча
+        const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
+        const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";    
         
-        // Разрешенные коды (последние 4 цифры штрихкода)
         const VALID_CODES = ["6433", "0309", "5528"];
     </script>
     <!-- 👆 КОНЕЦ НАСТРОЕК 👆 -->
@@ -46,9 +44,22 @@
         .score-circle {
             width: 210px; height: 210px; border-radius: 50%; border: 8px solid #333;
             display: flex; align-items: center; justify-content: center;
-            font-size: 90px; font-weight: 900; margin: 15px 0;
+            font-size: 90px; font-weight: 900; margin: 10px 0;
             background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 70%);
             transition: border-color 0.1s; position: relative; z-index: 2;
+        }
+        
+        /* Визуализатор громкости */
+        .volume-meter {
+            width: 200px; height: 6px; background: #333; border-radius: 3px; margin-top: 15px;
+            position: relative; overflow: hidden;
+        }
+        .volume-bar {
+            height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
+        }
+        .volume-threshold {
+            position: absolute; top: 0; bottom: 0; width: 2px; background: #ff0055; z-index: 5;
+            left: 20%; /* Будет меняться JS */
         }
         
         @keyframes shake-anim {
@@ -165,7 +176,6 @@
         <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
         <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433, 0309 или 5528</p>
         
-        <!-- ПРАВА ЗАЩИЩЕНЫ -->
         <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
             © 2026 BOXBALL RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
         </div>
@@ -198,11 +208,10 @@
 
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
 
-            <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">30</span></label>
-            <input type="range" id="sensRange" min="10" max="100" value="30" oninput="updateSens(this.value)">
+            <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">20</span></label>
+            <input type="range" id="sensRange" min="5" max="100" value="20" oninput="updateSens(this.value)">
             
-            <!-- КНОПКА СБРОСА -->
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (30)</button>
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (20)</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
             
@@ -211,7 +220,14 @@
         </div>
         
         <div class="score-circle" id="scoreDisplay">0</div>
-        <div style="color:#666; font-size:12px; margin-top:-10px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
+        
+        <!-- ВИЗУАЛИЗАТОР ГРОМКОСТИ -->
+        <div class="volume-meter">
+            <div class="volume-bar" id="micLevel"></div>
+            <div class="volume-threshold" id="micThresh"></div>
+        </div>
+        
+        <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
 
         <button id="startBtn">НАЧАТЬ РАУНД</button>
         <button onclick="showLeaderboard(true)" class="secondary-btn">🏆 ТАБЛИЦА ЛИДЕРОВ</button>
@@ -253,7 +269,7 @@
 
     <script>
         const MIN_HIT_DELAY = 180;
-        let SENSITIVITY = 30; 
+        let SENSITIVITY = 20; // ОПТИМАЛЬНЫЙ СТАРТ
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
@@ -263,6 +279,7 @@
         let metronomeInterval;
         let totalHits = 0;
         let personalBest = 0;
+        let isClipping = false; // Для триггера Шмитта
         
         // НАСТРОЙКИ
         let isSoundOn = true;
@@ -281,12 +298,9 @@
             
             const savedSens = localStorage.getItem('box_sens');
             if(savedSens) { 
-                SENSITIVITY = savedSens; 
-                document.getElementById('sensRange').value = savedSens;
-                document.getElementById('sensVal').innerText = savedSens;
+                updateSens(savedSens); // Применяем сохраненное
             } else {
-                document.getElementById('sensRange').value = 30;
-                document.getElementById('sensVal').innerText = 30;
+                updateSens(20); // Дефолт
             }
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
@@ -358,7 +372,6 @@
         
         function checkCode() { 
             const val = document.getElementById('passInput').value.trim();
-            // Проверка на вхождение в массив
             if(VALID_CODES.includes(val)) { 
                 localStorage.setItem('box_auth', 'true'); 
                 showScreen('screen-game'); 
@@ -370,11 +383,22 @@
         function toggleSaveBtn() { document.getElementById('saveBtn').disabled = !document.getElementById('legalCheck').checked; }
         function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
         function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
-        function updateSens(val) { SENSITIVITY = val; document.getElementById('sensVal').innerText = val; localStorage.setItem('box_sens', val); }
-        function setRecommended() { updateSens(30); document.getElementById('sensRange').value = 30; }
+        
+        function updateSens(val) { 
+            SENSITIVITY = parseInt(val); 
+            document.getElementById('sensVal').innerText = SENSITIVITY; 
+            document.getElementById('sensRange').value = SENSITIVITY;
+            
+            // Обновляем позицию красной черты на визуализаторе
+            const percent = Math.min(SENSITIVITY, 100);
+            document.getElementById('micThresh').style.left = percent + "%";
+            
+            localStorage.setItem('box_sens', SENSITIVITY); 
+        }
+        
+        function setRecommended() { updateSens(20); }
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
-        // Открытие конкретной ссылки на товар
         function openReviewLink(url) { 
             window.Telegram.WebApp.openLink(url); 
             document.getElementById('reviewModal').style.display = 'none'; 
@@ -430,19 +454,6 @@
             }
         }
 
-        function launchConfetti() {
-            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
-            for(let i=0; i<30; i++) {
-                const c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = Math.random()*100 + 'vw';
-                c.style.background = colors[Math.floor(Math.random()*colors.length)];
-                c.style.animationDuration = (Math.random()*2+2) + 's';
-                document.body.appendChild(c);
-                setTimeout(()=>c.remove(), 4000);
-            }
-        }
-
         const startBtn = document.getElementById('startBtn');
         startBtn.addEventListener('click', async () => {
             if(isRunning) return;
@@ -461,6 +472,7 @@
                 isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
                 timeLeft = (currentMode === 'survival') ? 10 : 60;
                 document.getElementById('timer').innerText = timeLeft;
+                isClipping = false; // Сброс триггера
 
                 if (timerInterval) clearInterval(timerInterval);
                 if (metronomeInterval) clearInterval(metronomeInterval);
@@ -483,29 +495,49 @@
                     const arr = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(arr);
                     let v = 0; for(let i=0; i<arr.length; i++) v+=arr[i];
                     let avg = v/arr.length;
-                    if(avg > SENSITIVITY) {
-                        const now = Date.now();
-                        if(now - lastHitTime > MIN_HIT_DELAY) {
-                            score++; const el = document.getElementById('scoreDisplay'); el.innerText = score; 
-                            el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 300);
+                    
+                    // ВИЗУАЛИЗАЦИЯ
+                    const barW = Math.min(avg * 2, 100);
+                    document.getElementById('micLevel').style.width = barW + "%";
 
-                            if (currentMode === 'survival') {
-                                el.classList.add('hit-survival');
-                                let bonus = 1.0; if (score > 20) bonus = 0.5; if (score > 50) bonus = 0.25;
-                                timeLeft += bonus; if (timeLeft > 10) timeLeft = 10;
-                                document.getElementById('timer').innerText = Math.floor(timeLeft);
-                            } else { 
-                                el.classList.add('hit'); 
+                    // АЛГОРИТМ (ТРИГГЕР ШМИТТА)
+                    if (!isClipping) {
+                        // Ждем удара
+                        if (avg > SENSITIVITY) {
+                            // УДАР!
+                            const now = Date.now();
+                            if(now - lastHitTime > MIN_HIT_DELAY) {
+                                score++; registerHitVisual();
+                                lastHitTime = now;
+                                isClipping = true; // Блокируем, пока не станет тихо
                             }
-                            
-                            setTimeout(()=>el.className = 'score-circle', 100);
-                            playSound('hit'); 
-                            lastHitTime = now;
+                        }
+                    } else {
+                        // Ждем тишины (50% от чувствительности)
+                        if (avg < (SENSITIVITY * 0.5)) {
+                            isClipping = false; // Готовы к новому удару
                         }
                     }
                 }
             } catch(e) { alert("Ошибка: Разрешите микрофон!"); }
         });
+
+        function registerHitVisual() {
+            const el = document.getElementById('scoreDisplay'); el.innerText = score; 
+            el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 300);
+
+            if (currentMode === 'survival') {
+                el.classList.add('hit-survival');
+                let bonus = 1.0; if (score > 20) bonus = 0.5; if (score > 50) bonus = 0.25;
+                timeLeft += bonus; if (timeLeft > 10) timeLeft = 10;
+                document.getElementById('timer').innerText = Math.floor(timeLeft);
+            } else { 
+                el.classList.add('hit'); 
+            }
+            
+            setTimeout(()=>el.className = 'score-circle', 100);
+            playSound('hit'); 
+        }
 
         function finishGame() { 
             isRunning = false; playSound('end'); launchConfetti();
@@ -587,6 +619,19 @@
                     </div>`;
                 });
             });
+        }
+        
+        function launchConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            for(let i=0; i<30; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random()*100 + 'vw';
+                c.style.background = colors[Math.floor(Math.random()*colors.length)];
+                c.style.animationDuration = (Math.random()*2+2) + 's';
+                document.body.appendChild(c);
+                setTimeout(()=>c.remove(), 4000);
+            }
         }
     </script>
 </body>
