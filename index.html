@@ -57,6 +57,7 @@
         .volume-bar {
             height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
         }
+        .volume-bar.spike { background: white !important; } /* Вспышка при скачке */
         
         .volume-threshold {
             position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5;
@@ -131,12 +132,6 @@
         .calib-progress { width: 80%; height: 4px; background: #333; margin-top: 20px; border-radius: 2px; }
         .calib-bar { height: 100%; width: 0%; background: #00ff88; transition: width 1s linear; }
         
-        /* ПРОФИЛЬ ИГРОКА */
-        .player-profile { width: 80%; text-align: left; margin-bottom: 15px; border: 1px solid #444; border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.05); }
-        .player-name-label { font-size: 10px; color: #888; }
-        .player-name-val { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
-        .edit-link { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; float: right; }
-
         /* УВЕДОМЛЕНИЕ (ТОСТ) */
         .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff88; z-index: 150; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
         .toast.show { opacity: 1; }
@@ -155,6 +150,12 @@
         .leader-tab.active-tab { color: #ff0055; border-bottom: 2px solid #ff0055; }
         .leader-tab.survival-tab.active-tab { color: #ffcc00; border-bottom: 2px solid #ffcc00; }
         .leader-tab.rhythm-tab.active-tab { color: #00ff88; border-bottom: 2px solid #00ff88; }
+        
+        /* Профиль */
+        .player-profile { width: 80%; text-align: left; margin-bottom: 15px; border: 1px solid #444; border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.05); }
+        .player-name-label { font-size: 10px; color: #888; }
+        .player-name-val { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .edit-link { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; float: right; }
     </style>
 </head>
 <body>
@@ -168,7 +169,7 @@
         <p style="color:#666; font-size:12px; margin-top:15px;">Анализ шума и ударов...</p>
     </div>
     
-    <!-- ТОСТ-УВЕДОМЛЕНИЕ -->
+    <!-- ТОСТ -->
     <div id="toast" class="toast">📢 Новое место? Сделай калибровку в настройках!</div>
 
     <!-- ОКНО ОТЗЫВА -->
@@ -185,7 +186,7 @@
         </div>
     </div>
 
-    <!-- ОКНО ТЕМ (МАГАЗИН) -->
+    <!-- ОКНО ТЕМ -->
     <div id="skinsModal" class="modal-overlay">
         <div class="modal-content" style="border-color: #fff;">
             <h3>🎨 ВЫБЕРИ СТИЛЬ</h3>
@@ -198,7 +199,7 @@
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">V13 (FAST)</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">V14 (IMPACT)</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -265,6 +266,7 @@
         </div>
         <div class="last-hit-info">
             ПИК: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span>
+            <span id="jumpInfo" style="color:#aaa;"></span>
         </div>
         
         <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
@@ -316,8 +318,8 @@
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 80; // СУПЕР БЫСТРО (0.08с)
-        let SENSITIVITY = 20; // ОПТИМАЛЬНО
+        const MIN_HIT_DELAY = 120; // 0.12 сек (очень быстро)
+        let SENSITIVITY = 20; 
         
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
@@ -329,9 +331,10 @@
         let totalHits = 0;
         let personalBest = 0;
         
-        // ФЛАГ ГОТОВНОСТИ (УМНЫЙ СБРОС)
-        let isReadyForHit = true;
-        
+        // ДЛЯ АЛГОРИТМА V14
+        let prevVal = 0;
+        let jumpThreshold = 15; // Насколько должен подскочить звук, чтобы считаться ударом
+
         // НАСТРОЙКИ
         let isSoundOn = true;
         let currentTheme = 'default';
@@ -392,7 +395,7 @@
                 const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
                 mic.connect(analyser); analyser.connect(script); script.connect(zeroGain); zeroGain.connect(audioCtx.destination);
                 
-                let calibrationSamples = [];
+                let peakSamples = [];
                 let timeLeft = 30; // 30 СЕКУНД
                 
                 const countInt = setInterval(() => {
@@ -409,7 +412,7 @@
                     let sum = 0;
                     for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
-                    calibrationSamples.push(Math.floor(rms * 1.5)); // Используем ту же формулу с бустом
+                    peakSamples.push(Math.floor(rms * 1.5));
                 };
 
                 // ФИНИШ КАЛИБРОВКИ
@@ -417,22 +420,25 @@
                     script.disconnect();
                     mic.disconnect();
                     
-                    if (calibrationSamples.length > 0) {
-                        let sumAll = calibrationSamples.reduce((a, b) => a + b, 0);
-                        let avgLevel = sumAll / calibrationSamples.length;
+                    if (peakSamples.length > 0) {
+                        peakSamples.sort((a, b) => a - b);
                         
-                        calibrationSamples.sort((a, b) => a - b);
-                        let peakLevel = calibrationSamples[calibrationSamples.length - 1]; 
+                        // Берем медианный "шум" (нижние 20%) и "удары" (верхние 10%)
+                        let noiseLevel = peakSamples[Math.floor(peakSamples.length * 0.2)];
+                        let peakLevel = peakSamples[Math.floor(peakSamples.length * 0.9)];
                         
-                        // ФОРМУЛА: Среднее между шумом и пиком
-                        let newSens = avgLevel + (peakLevel - avgLevel) * 0.35;
-                        if(newSens < 5) newSens = 5;
+                        // Если разница маленькая (не били)
+                        if (peakLevel - noiseLevel < 10) peakLevel = noiseLevel + 30;
+
+                        // Ставим порог чуть выше шума
+                        let newSens = noiseLevel + 10;
+                        if(newSens < 10) newSens = 10;
                         if(newSens > 60) newSens = 60;
                         
                         let finalSens = Math.floor(newSens);
                         
                         updateSens(finalSens);
-                        alert(`Калибровка завершена!\nСредний шум: ${Math.floor(avgLevel)}\nПик удара: ${peakLevel}\n\nУстановлен порог: ${finalSens}`);
+                        alert(`Калибровка завершена!\nШум: ${noiseLevel}\nПик: ${peakLevel}\nУстановлен порог: ${finalSens}`);
                     }
                     
                     document.getElementById('calibModal').style.display = 'none';
@@ -581,6 +587,13 @@
 
         function playSound(type) {
             if (!isSoundOn) return;
+            
+            // Защита от эха (глушим на 0.1с)
+            if(type === 'hit') {
+                 // Здесь мы НЕ блокируем микрофон флагом, так как используем алгоритм скачка.
+                 // Скачок от эха будет маленьким по сравнению с пиком.
+            }
+
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
@@ -588,8 +601,9 @@
             if (type === 'hit') {
                 osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
                 osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime+0.1);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
-                osc.start(); osc.stop(audioCtx.currentTime+0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.05); // Супер короткий звук (50мс)
+                osc.start(); osc.stop(audioCtx.currentTime+0.05);
             } else if (type === 'tick') {
                 osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
@@ -632,7 +646,8 @@
                 isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
                 timeLeft = (currentMode === 'survival') ? 10 : 60;
                 document.getElementById('timer').innerText = timeLeft;
-                isReadyForHit = true; 
+                
+                prevVal = 0; // Сброс для алгоритма скачка
 
                 if (timerInterval) clearInterval(timerInterval);
                 if (metronomeInterval) clearInterval(metronomeInterval);
@@ -650,7 +665,7 @@
                     } 
                 }, 1000);
 
-                // --- АЛГОРИТМ V13 (Smart Reset) ---
+                // --- АЛГОРИТМ V14 (IMPACT DETECTOR) ---
                 script.onaudioprocess = function() {
                     if(!isRunning) return;
                     
@@ -668,28 +683,29 @@
                     const visual = Math.min(val * 1.5, 100);
                     const barEl = document.getElementById('micLevel');
                     barEl.style.width = visual + "%";
-                    
                     document.getElementById('lastHitVal').innerText = val;
-
-                    // 1. УДАР?
+                    
+                    // --- ГИБРИДНЫЙ АЛГОРИТМ ---
+                    const now = Date.now();
+                    
+                    // 1. Проверяем порог громкости
                     if (val > SENSITIVITY) {
-                         const now = Date.now();
-                         if (isReadyForHit && (now - lastHitTime > MIN_HIT_DELAY)) {
-                             score++; 
-                             registerHitVisual();
-                             lastHitTime = now;
-                             isReadyForHit = false; // Блок
-                             barEl.classList.add('hit-detected'); 
+                         // 2. Проверяем СКАЧОК (чтобы отсечь протяжный шум)
+                         // Если звук вырос резко по сравнению с прошлым кадром
+                         // ИЛИ если звук очень громкий (сильный удар)
+                         if (val > (prevVal + 5) || val > (SENSITIVITY * 1.5)) {
+                             // 3. Проверяем задержку
+                             if (now - lastHitTime > MIN_HIT_DELAY) {
+                                 score++; 
+                                 registerHitVisual();
+                                 barEl.classList.add('spike');
+                                 setTimeout(() => barEl.classList.remove('spike'), 100);
+                                 lastHitTime = now;
+                             }
                          }
-                    } else {
-                        // 2. СБРОС (УМНЫЙ)
-                        // Если громкость упала ниже 75% от порога - мы готовы снова
-                        // Это ключевое изменение: не ждем полной тишины!
-                        if (val < (SENSITIVITY * 0.75)) {
-                            isReadyForHit = true;
-                            barEl.classList.remove('hit-detected');
-                        }
                     }
+                    
+                    prevVal = val; // Запоминаем уровень для следующего кадра
                 }
             } catch(e) { alert("Ошибка: Разрешите микрофон!"); }
         });
