@@ -3,14 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Final</title>
+    <title>BoxBall Russia</title>
     
     <!-- 👇 НАСТРОЙКИ 👇 -->
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkA8d8DIy994lgU70DGQ604EZ6e59kkEPm_Zhfaj8eG_QxmbwKltgFK5kRF3bl41_LzA/exec"; 
         const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing";
-        const REVIEW_URL = "https://www.wildberries.ru/catalog/ВАШ_АРТИКУЛ/detail.aspx"; 
-        const SECRET_CODE = "BOX2025";
+        const CHANNEL_URL = "https://t.me/DUROV";
+        
+        // Артикулы Wildberries
+        const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; // Мяч 60 гр
+        const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";    // 3 мяча
+        
+        // Разрешенные коды (последние 4 цифры штрихкода)
+        const VALID_CODES = ["6433", "0309", "5528"];
     </script>
     <!-- 👆 КОНЕЦ НАСТРОЕК 👆 -->
 
@@ -128,7 +134,9 @@
             <div style="color: #ccc; font-size: 14px; margin-bottom: 20px;">
                 Ты машина! 🤖<br>Помоги нам стать лучше — оставь отзыв.
             </div>
-            <button onclick="openReviewLink()" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ ОСТАВИТЬ ОТЗЫВ</button>
+            <p style="font-size:12px; color:#888; margin-bottom:5px;">ВЫБЕРИ СВОЙ НАБОР:</p>
+            <button onclick="openReviewLink(WB_URL_SINGLE)" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ МЯЧ 60гр (1шт)</button>
+            <button onclick="openReviewLink(WB_URL_SET)" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ НАБОР (3шт)</button>
             <button onclick="document.getElementById('reviewModal').style.display='none'" style="background: transparent; border: 1px solid #555;">ПОЗЖЕ</button>
         </div>
     </div>
@@ -146,16 +154,16 @@
     <!-- 1. ВХОД -->
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">ULTIMATE</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">FINAL VERSION</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
             <div class="career-num" id="totalHitsLogin">0</div>
         </div>
 
-        <input type="text" id="passInput" placeholder="КОД ИЗ КОРОБКИ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:18px; margin-bottom:15px; width:80%;">
+        <input type="text" id="passInput" placeholder="4 ЦИФРЫ ПОД ШТРИХКОДОМ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:16px; margin-bottom:15px; width:80%;">
         <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
-        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px;">Неверный код</p>
+        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433, 0309 или 5528</p>
         
         <!-- ПРАВА ЗАЩИЩЕНЫ -->
         <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
@@ -190,11 +198,11 @@
 
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
 
-            <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">15</span></label>
-            <input type="range" id="sensRange" min="5" max="50" value="15" oninput="updateSens(this.value)">
+            <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">30</span></label>
+            <input type="range" id="sensRange" min="10" max="100" value="30" oninput="updateSens(this.value)">
             
             <!-- КНОПКА СБРОСА -->
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (15)</button>
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (30)</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
             
@@ -245,7 +253,7 @@
 
     <script>
         const MIN_HIT_DELAY = 180;
-        let SENSITIVITY = 15;
+        let SENSITIVITY = 30; 
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
@@ -276,7 +284,11 @@
                 SENSITIVITY = savedSens; 
                 document.getElementById('sensRange').value = savedSens;
                 document.getElementById('sensVal').innerText = savedSens;
+            } else {
+                document.getElementById('sensRange').value = 30;
+                document.getElementById('sensVal').innerText = 30;
             }
+
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
             document.getElementById('totalHitsLogin').innerText = totalHits.toLocaleString();
             personalBest = parseInt(localStorage.getItem('box_pb_sprint')) || 0;
@@ -343,17 +355,30 @@
         }
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        
         function checkCode() { 
-            if(document.getElementById('passInput').value.trim().toUpperCase() === SECRET_CODE) { localStorage.setItem('box_auth', 'true'); showScreen('screen-game'); } 
+            const val = document.getElementById('passInput').value.trim();
+            // Проверка на вхождение в массив
+            if(VALID_CODES.includes(val)) { 
+                localStorage.setItem('box_auth', 'true'); 
+                showScreen('screen-game'); 
+            } 
             else { document.getElementById('errorMsg').style.display = 'block'; }
         }
+        
         function logout() { localStorage.removeItem('box_auth'); location.reload(); }
         function toggleSaveBtn() { document.getElementById('saveBtn').disabled = !document.getElementById('legalCheck').checked; }
         function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
         function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
         function updateSens(val) { SENSITIVITY = val; document.getElementById('sensVal').innerText = val; localStorage.setItem('box_sens', val); }
-        function setRecommended() { updateSens(15); document.getElementById('sensRange').value = 15; }
-        function openReviewLink() { window.Telegram.WebApp.openLink(REVIEW_URL); document.getElementById('reviewModal').style.display = 'none'; }
+        function setRecommended() { updateSens(30); document.getElementById('sensRange').value = 30; }
+        function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
+        
+        // Открытие конкретной ссылки на товар
+        function openReviewLink(url) { 
+            window.Telegram.WebApp.openLink(url); 
+            document.getElementById('reviewModal').style.display = 'none'; 
+        }
         
         function speak(text) { 
             if (!isSoundOn || synth.speaking) return; 
