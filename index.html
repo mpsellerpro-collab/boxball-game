@@ -55,13 +55,13 @@
             position: relative; overflow: hidden;
         }
         .volume-bar {
-            height: 100%; background: #00ff88; width: 0%; transition: width 0.05s, background 0.2s;
+            height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
         }
-        .volume-bar.locked { background: #ff0055; } /* Красный когда занят */
+        /* Убран locked стиль, так как мы убрали блокировку */
         
         .volume-threshold {
             position: absolute; top: 0; bottom: 0; width: 2px; background: white; z-index: 5;
-            left: 20%; box-shadow: 0 0 5px white;
+            left: 10%; box-shadow: 0 0 5px white;
         }
         
         @keyframes shake-anim {
@@ -210,10 +210,11 @@
 
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
 
-            <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">20</span></label>
-            <input type="range" id="sensRange" min="5" max="100" value="20" oninput="updateSens(this.value)">
+            <label style="font-size:12px; color:#ccc;">Порог удара: <span id="sensVal">10</span></label>
+            <input type="range" id="sensRange" min="1" max="100" value="10" oninput="updateSens(this.value)">
             
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (20)</button>
+            <!-- КНОПКА СБРОСА -->
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #00ff88; color: #00ff88; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">✅ Сбросить (10)</button>
             
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
             
@@ -270,8 +271,8 @@
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 140; 
-        let SENSITIVITY = 20; 
+        const MIN_HIT_DELAY = 200; // Пауза 0.2с между ударами
+        let SENSITIVITY = 10; // ДЕФОЛТ: ОЧЕНЬ ЧУВСТВИТЕЛЬНЫЙ
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
@@ -281,7 +282,6 @@
         let metronomeInterval;
         let totalHits = 0;
         let personalBest = 0;
-        let isClipping = false; // Для триггера Шмитта
         
         // НАСТРОЙКИ
         let isSoundOn = true;
@@ -300,12 +300,9 @@
             
             const savedSens = localStorage.getItem('box_sens');
             if(savedSens) { 
-                SENSITIVITY = parseInt(savedSens);
-                document.getElementById('sensRange').value = SENSITIVITY;
-                updateSensUI(SENSITIVITY);
+                updateSens(savedSens); 
             } else {
-                document.getElementById('sensRange').value = 20;
-                updateSensUI(20);
+                updateSens(10); // Устанавливаем дефолт при первом запуске
             }
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
@@ -392,23 +389,19 @@
         // ФУНКЦИЯ ОБНОВЛЕНИЯ БЕЗ БЛОКИРОВКИ ПОЛЗУНКА
         function updateSens(val) { 
             SENSITIVITY = parseInt(val); 
-            updateSensUI(SENSITIVITY);
-            localStorage.setItem('box_sens', SENSITIVITY); 
-        }
-
-        function updateSensUI(val) {
-            document.getElementById('sensVal').innerText = val; 
+            
+            document.getElementById('sensVal').innerText = SENSITIVITY;
+            document.getElementById('sensRange').value = SENSITIVITY;
             
             // Обновляем порог на полоске
-            const percent = Math.min(val, 100);
+            const percent = Math.min(SENSITIVITY, 100);
             const thresh = document.getElementById('micThresh');
             if(thresh) thresh.style.left = percent + "%";
+            
+            localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { 
-            document.getElementById('sensRange').value = 20;
-            updateSens(20); 
-        }
+        function setRecommended() { updateSens(10); } // СБРОС НА 10
         function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
         
         function openReviewLink(url) { 
@@ -497,7 +490,6 @@
                 isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
                 timeLeft = (currentMode === 'survival') ? 10 : 60;
                 document.getElementById('timer').innerText = timeLeft;
-                isClipping = false; // Сброс триггера
 
                 if (timerInterval) clearInterval(timerInterval);
                 if (metronomeInterval) clearInterval(metronomeInterval);
@@ -526,28 +518,13 @@
                     const barEl = document.getElementById('micLevel');
                     barEl.style.width = barW + "%";
 
-                    // АЛГОРИТМ (ТРИГГЕР ШМИТТА)
-                    if (!isClipping) {
-                        // Полоска зеленая - ГОТОВ
-                        barEl.classList.remove('locked');
-                        
-                        // Ждем удара
-                        if (avg > SENSITIVITY) {
-                            // УДАР!
-                            const now = Date.now();
-                            if(now - lastHitTime > MIN_HIT_DELAY) {
-                                score++; registerHitVisual();
-                                lastHitTime = now;
-                                isClipping = true; // Блокируем
-                            }
-                        }
-                    } else {
-                        // Полоска красная - БЛОК (ЖДЕМ ТИШИНЫ)
-                        barEl.classList.add('locked');
-                        
-                        // Ждем падения громкости до 75% от порога (БЫСТРАЯ ПЕРЕЗАРЯДКА)
-                        if (avg < (SENSITIVITY * 0.75)) {
-                            isClipping = false; // Снова готов
+                    // ПРОСТОЙ АЛГОРИТМ: ЕСЛИ ГРОМКО -> УДАР
+                    if (avg > SENSITIVITY) {
+                        const now = Date.now();
+                        // Ждем пока пройдет 200 мс с прошлого удара
+                        if(now - lastHitTime > MIN_HIT_DELAY) {
+                            score++; registerHitVisual();
+                            lastHitTime = now;
                         }
                     }
                 }
