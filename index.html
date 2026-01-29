@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Russia (iOS Fix)</title>
+    <title>BoxBall Russia (Final)</title>
     
     <script>
-        const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ"; 
-        const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА";
+        // Вставь сюда свои ссылки
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx..."; 
+        const POLICY_URL = "https://docs.google.com/document/d/YOUR_LINK";
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
         const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";     
+        
         const VALID_CODES = ["6433", "0309", "5528"];
+        const CHANNEL_URL = "https://t.me/DUROV";
     </script>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -23,11 +27,12 @@
         }
 
         body {
-            font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: radial-gradient(circle at center, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
             color: var(--text-color); display: flex; flex-direction: column; align-items: center;
             height: 100vh; margin: 0; overflow: hidden; text-align: center;
             user-select: none; -webkit-tap-highlight-color: transparent;
+            transition: background 0.5s;
         }
 
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.3s; }
@@ -35,30 +40,30 @@
 
         /* ИГРОВОЙ КРУГ */
         .score-circle {
-            width: 200px; height: 200px; border-radius: 50%; border: 8px solid #333;
+            width: 210px; height: 210px; border-radius: 50%; border: 8px solid #333;
             display: flex; align-items: center; justify-content: center;
-            font-size: 80px; font-weight: 900; margin: 10px 0;
+            font-size: 90px; font-weight: 900; margin: 10px 0;
             background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 70%);
             transition: border-color 0.1s; position: relative; z-index: 2;
         }
         
-        /* DEBUG INFO */
+        /* DEBUG INFO (Новое) */
         .debug-info {
             font-family: monospace; font-size: 10px; color: #00ff88; 
-            background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 4px;
-            margin-top: 10px; border: 1px solid #004422; width: 90%;
-            display: flex; justify-content: space-around;
+            background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px;
+            margin-top: 5px; border: 1px solid #004422; width: auto;
+            display: flex; gap: 10px;
         }
         
-        /* Визуализатор громкости */
+        /* Визуализатор */
         .volume-meter {
-            width: 240px; height: 12px; background: #222; border-radius: 6px; margin-top: 10px;
+            width: 240px; height: 12px; background: #222; border-radius: 6px; margin-top: 15px;
             position: relative; overflow: hidden; border: 1px solid #444;
         }
         .volume-bar { height: 100%; background: #00ff88; width: 0%; transition: width 0.05s; }
         .volume-threshold {
-            position: absolute; top: 0; bottom: 0; width: 3px; background: #ff0055; z-index: 5;
-            left: 0%; box-shadow: 0 0 5px #ff0055; opacity: 0.8; transition: left 0.2s;
+            position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5;
+            left: 20%; box-shadow: 0 0 8px #ff0055; transition: left 0.2s; opacity: 0.8;
         }
         
         @keyframes shake-anim {
@@ -66,133 +71,258 @@
             50% { transform: translate(2px, 0px); } 75% { transform: translate(-1px, 2px); } 100% { transform: translate(0, 0); }
         }
         .shake { animation: shake-anim 0.1s; }
-        .hit { border-color: var(--primary); box-shadow: 0 0 40px var(--primary); color: var(--primary); }
+        .hit { border-color: var(--primary); box-shadow: 0 0 50px var(--primary); color: var(--primary); }
 
         button {
-            padding: 16px 0; font-size: 16px; font-weight: 800; background: var(--primary); color: white; border: none; border-radius: 14px;
-            width: 100%; max-width: 280px; margin-top: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 5;
+            padding: 16px 0; font-size: 17px; font-weight: 800; background: var(--primary); color: white; border: none; border-radius: 14px;
+            width: 100%; max-width: 280px; margin-top: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; z-index: 5;
+            transition: background 0.3s;
         }
         button:active { transform: scale(0.96); }
-        button:disabled { background: #444; color: #888; cursor: not-allowed; }
+        button:disabled { background: #444; color: #888; box-shadow: none; cursor: not-allowed; }
         button.secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; box-shadow: none; font-size: 14px; margin-top: 15px; padding: 12px; }
 
+        /* ВЫБОР РЕЖИМА */
+        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; width: 95%; max-width: 340px; }
+        .mode-btn { flex: 1; padding: 10px 5px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 11px; font-weight: bold; margin: 0; box-shadow: none; }
+        .mode-btn.active-mode { background: var(--primary); color: white; border-color: var(--primary); }
+
         /* НАСТРОЙКИ */
-        .settings-panel { background: rgba(20,20,20,0.98); border: 1px solid #444; padding: 20px; border-radius: 16px; width: 90%; max-width: 320px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; z-index: 100; box-shadow: 0 20px 50px rgba(0,0,0,0.9); }
+        .settings-panel { background: rgba(30,30,30,0.98); border: 1px solid #555; padding: 20px; border-radius: 15px; margin-bottom: 20px; width: 90%; max-width: 320px; display: none; z-index: 100; box-shadow: 0 10px 40px rgba(0,0,0,0.9); position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); }
+        input[type=range] { width: 100%; margin: 10px 0; accent-color: var(--primary); cursor: pointer; }
         
         .control-group { margin-bottom: 15px; text-align: left; }
         .control-label { font-size: 12px; color: #aaa; display: flex; justify-content: space-between; margin-bottom: 5px; }
         .control-val { color: #fff; font-weight: bold; }
-        input[type=range] { width: 100%; margin: 5px 0; accent-color: var(--primary); cursor: pointer; height: 6px; background: #333; border-radius: 3px; appearance: none; }
-        input[type=range]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; background: white; border-radius: 50%; }
 
-        /* Other UI */
-        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; width: 95%; max-width: 340px; }
-        .mode-btn { flex: 1; padding: 10px 5px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 10px; font-size: 11px; font-weight: bold; }
-        .mode-btn.active-mode { background: var(--primary); color: white; border-color: var(--primary); }
+        /* ЛИДЕРБОРД */
+        .leaderboard-box { background: rgba(0,0,0,0.3); width: 100%; max-height: 35vh; overflow-y: auto; border-radius: 16px; margin: 15px 0; }
+        .leader-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .leader-name { font-size: 14px; font-weight: bold; display: block; color: #eee; text-align: left; }
+        .leader-date { font-size: 10px; color: #888; display: block; margin-top: 3px; text-align: left; }
+        .leader-score { font-size: 18px; font-weight: bold; color: #fff; }
+        .leader-row:nth-child(1) .leader-name, .leader-row:nth-child(1) .leader-score { color: var(--accent); }
 
-        /* Toasts & Modals */
+        .shield-icon { font-size: 10px; color: #00ff88; margin-bottom: 10px; border: 1px solid #00ff88; padding: 4px 8px; border-radius: 20px; align-self: flex-start; margin-top: 10px; }
+        .legal-checkbox-area { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; width: 90%; max-width: 300px; text-align: left; font-size: 11px; color: #aaa; }
+        .legal-link { color: var(--primary); text-decoration: underline; cursor: pointer; }
+
+        /* МАГАЗИН СКИНОВ */
+        .skins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
+        .skin-card { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 10px; padding: 10px; cursor: pointer; position: relative; opacity: 0.5; }
+        .skin-card.unlocked { opacity: 1; border-color: #666; }
+        .skin-card.active-skin { border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
+        .skin-color { width: 30px; height: 30px; border-radius: 50%; margin: 0 auto 5px; }
+        .skin-name { font-size: 12px; font-weight: bold; }
+        .lock-icon { font-size: 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; }
+
+        /* ОКНА */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
+        .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid var(--primary); text-align: center; width: 85%; max-width: 320px; max-height: 80vh; overflow-y: auto; }
+
+        /* КАЛИБРОВКА */
+        .calibration-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .calib-circle { width: 180px; height: 180px; border: 5px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; color: #00ff88; margin-bottom: 20px; background: rgba(0,255,136,0.1); }
+        .calib-progress { width: 80%; height: 4px; background: #333; margin-top: 20px; border-radius: 2px; }
+        .calib-bar { height: 100%; width: 0%; background: #00ff88; transition: width 1s linear; }
+        
+        /* УВЕДОМЛЕНИЕ (ТОСТ) */
         .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff88; z-index: 150; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
         .toast.show { opacity: 1; }
-        
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
-        .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid var(--primary); text-align: center; width: 85%; max-width: 320px; }
 
-        /* Leaderboard */
-        .leaderboard-box { background: rgba(0,0,0,0.3); width: 100%; max-height: 40vh; overflow-y: auto; border-radius: 16px; margin: 15px 0; }
-        .leader-row { display: flex; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #333; }
+        .career-box { margin-bottom: 20px; padding: 10px; border-top: 1px solid #333; border-bottom: 1px solid #333; width: 100%; }
+        .career-text { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .career-num { font-size: 24px; color: #fff; font-weight: 900; }
+        .rank-badge { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; }
+        
+        .confetti { position: absolute; width: 10px; height: 10px; animation: fall linear forwards; z-index: 100; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+        
+        /* Вкладки лидерборда */
+        .leader-tabs { display: flex; width: 100%; margin-bottom: 10px; border-bottom: 1px solid #444; }
+        .leader-tab { flex: 1; padding: 10px; font-size: 10px; font-weight: bold; color: #666; cursor: pointer; }
+        .leader-tab.active-tab { color: #ff0055; border-bottom: 2px solid #ff0055; }
+        .leader-tab.survival-tab.active-tab { color: #ffcc00; border-bottom: 2px solid #ffcc00; }
+        .leader-tab.rhythm-tab.active-tab { color: #00ff88; border-bottom: 2px solid #00ff88; }
+        
+        /* Профиль */
+        .player-profile { width: 80%; text-align: left; margin-bottom: 15px; border: 1px solid #444; border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.05); }
+        .player-name-label { font-size: 10px; color: #888; }
+        .player-name-val { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .edit-link { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; float: right; }
     </style>
 </head>
 <body>
 
+    <div id="calibModal" class="calibration-overlay">
+        <h2 style="color:white; margin-bottom:5px;">🤫 ТИШИНА...</h2>
+        <p style="color:#aaa; max-width:80%; font-size:14px; margin-bottom:20px;">Не бей по мячу!<br>Мы замеряем фоновый шум комнаты.</p>
+        <div class="calib-circle" id="calibTimer">10</div>
+        <div class="calib-progress"><div class="calib-bar" id="calibBar"></div></div>
+        <p style="color:#666; font-size:12px; margin-top:15px;">Анализ Noise Floor (dB)...</p>
+    </div>
+    
     <div id="toast" class="toast">📢 Настройки открыты! Подкрути усиление.</div>
+
+    <div id="reviewModal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="font-size: 24px; margin-bottom: 10px;">🎉 НОВЫЙ РЕКОРД!</div>
+            <div style="color: #ccc; font-size: 14px; margin-bottom: 20px;">
+                Ты машина! 🤖<br>Помоги нам стать лучше — оставь отзыв.
+            </div>
+            <p style="font-size:12px; color:#888; margin-bottom:5px;">ВЫБЕРИ СВОЙ НАБОР:</p>
+            <button onclick="openReviewLink(WB_URL_SINGLE)" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ МЯЧ 60гр (1шт)</button>
+            <button onclick="openReviewLink(WB_URL_SET)" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ НАБОР (3шт)</button>
+            <button onclick="document.getElementById('reviewModal').style.display='none'" style="background: transparent; border: 1px solid #555;">ПОЗЖЕ</button>
+        </div>
+    </div>
+
+    <div id="skinsModal" class="modal-overlay">
+        <div class="modal-content" style="border-color: #fff;">
+            <h3>🎨 ВЫБЕРИ СТИЛЬ</h3>
+            <p style="font-size:12px; color:#888;">Набивай удары, чтобы открыть новые цвета!</p>
+            <div class="skins-grid" id="skinsGrid"></div>
+            <button onclick="document.getElementById('skinsModal').style.display='none'" style="margin-top:15px; background: #333;">ЗАКРЫТЬ</button>
+        </div>
+    </div>
 
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">iOS GAIN FIX EDITION</p>
-        <input type="text" id="passInput" placeholder="КОД ИЗ КОРОБКИ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:16px; margin-bottom:15px; width:80%;">
-        <button onclick="checkCode()">ВОЙТИ</button>
-        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код неверный.</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">IOS GAIN + FULL MENU</p>
+        
+        <div class="career-box">
+            <div class="career-text">Всего ударов</div>
+            <div class="career-num" id="totalHitsLogin">0</div>
+        </div>
+
+        <input type="text" id="passInput" placeholder="4 ЦИФРЫ ПОД ШТРИХКОДОМ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:16px; margin-bottom:15px; width:80%;">
+        <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
+        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433, 0309 или 5528</p>
+        
+        <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
+            © 2026 BOXBALL RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
+        </div>
     </div>
 
     <div id="screen-game" class="screen">
         <div class="mode-selector">
             <button class="mode-btn active-mode" id="btnSprint" onclick="setMode('sprint')">⚡️ СПРИНТ</button>
             <button class="mode-btn" id="btnSurvival" onclick="setMode('survival')">💀 ВЫЖИВАНИЕ</button>
+            <button class="mode-btn" id="btnRhythm" onclick="setMode('rhythm')">🎵 РИТМ</button>
         </div>
 
         <div style="display:flex; justify-content:space-between; width:90%; align-items: center; margin-bottom: 5px;">
-            <div style="background:rgba(255,255,255,0.1); padding:8px 25px; border-radius:20px; font-weight:bold; color:#fff; font-size: 42px; min-width: 100px;" id="timer">60</div>
+            <div style="background:rgba(255,255,255,0.1); padding:8px 25px; border-radius:20px; font-weight:bold; color:#fff; font-size: 42px; min-width: 110px;" id="timer">60</div>
             <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <div class="shield-icon" style="margin:0 0 5px 0;">🛡️ iOS Boost</div>
                 <div style="font-size:12px; color:#aaa; cursor:pointer; border-bottom:1px dashed #555;" onclick="toggleSettings()">⚙️ Настройки</div>
             </div>
         </div>
         
         <div class="settings-panel" id="settingsPanel">
-            <h3 style="margin-top:0; font-size:14px; margin-bottom:15px;">НАСТРОЙКИ АУДИО</h3>
+            <h3 style="margin-top:0; font-size:14px; margin-bottom:15px;">НАСТРОЙКИ</h3>
             
             <div class="control-group">
                 <div class="control-label">🚀 УСИЛЕНИЕ (PRE-AMP) <span id="gainVal" class="control-val">5x</span></div>
                 <input type="range" id="gainRange" min="1" max="20" step="1" value="5" oninput="updateAudioSettings()">
-                <div style="font-size:10px; color:#666; margin-top:2px;">Если iPhone не слышит — ставь 10x-20x</div>
             </div>
 
             <div class="control-group">
-                <div class="control-label">🎯 ПОРОГ СРАБАТЫВАНИЯ <span id="sensVal" class="control-val">15dB</span></div>
+                <div class="control-label">🎯 ПОРОГ <span id="sensVal" class="control-val">15dB</span></div>
                 <input type="range" id="sensRange" min="5" max="40" value="15" oninput="updateAudioSettings()">
-                <div style="font-size:10px; color:#666; margin-top:2px;">Разница между шумом и ударом</div>
             </div>
 
-            <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
-            <button onclick="toggleSettings()" style="padding:10px; font-size:12px; background:#333;">ЗАКРЫТЬ</button>
+            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 10px; font-weight:bold;">🪄 КАЛИБРОВКА ШУМА</button>
+            
+            <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
+            
+            <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; margin-bottom: 5px;">🚪 Выйти</button>
+            <button onclick="toggleSettings()" style="margin-top:5px; padding:10px; font-size:12px; background:#222; border:1px solid #444;">ЗАКРЫТЬ</button>
         </div>
         
         <div class="score-circle" id="scoreDisplay">0</div>
         
-        <div class="debug-info" id="debugLine">Waiting for start...</div>
+        <div class="debug-info" id="debugLine">Signal: -- | Thr: --</div>
 
         <div class="volume-meter">
             <div class="volume-bar" id="micLevel"></div>
             <div class="volume-threshold" id="micThresh"></div>
         </div>
         
-        <div style="color:#666; font-size:12px; margin-top:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
+        <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
 
         <button id="startBtn">НАЧАТЬ РАУНД</button>
+        <button onclick="showLeaderboard(true)" class="secondary-btn">🏆 ТАБЛИЦА ЛИДЕРОВ</button>
     </div>
 
     <div id="screen-save" class="screen">
-        <div style="font-size:14px; color:#aaa;">РЕЗУЛЬТАТ</div>
+        <div style="font-size:14px; color:#aaa;">ВАШ РЕЗУЛЬТАТ</div>
+        <div class="rank-badge" id="rankDisplay">НОВИЧОК</div>
         <h1 style="font-size:80px; margin:0; color:var(--primary);" id="finalScore">0</h1>
+        <div style="font-size:12px; color:var(--accent); font-weight:bold; margin-bottom:10px;" id="recordMsg"></div>
+
+        <div style="display:flex; gap:15px; justify-content:center; margin-bottom:15px;">
+            <div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:5px;">🔥 <span id="resCalories">0</span> ККАЛ</div>
+            <div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:5px;">🎮 <span id="resMode">СПРИНТ</span></div>
+        </div>
         
-        <input type="text" id="nicknameInput" placeholder="ВАШЕ ИМЯ" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%; margin: 15px 0;">
-        <button id="saveBtn" onclick="saveScore()">СОХРАНИТЬ</button>
-        <button onclick="location.reload()" class="secondary-btn">ИГРАТЬ СНОВА</button>
+        <div id="nameInputArea">
+            <input type="text" id="nicknameInput" placeholder="Ваше Имя" maxlength="15" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%; margin-bottom: 10px;">
+        </div>
+        
+        <div id="nameDisplayArea" style="display:none;" class="player-profile">
+            <div class="player-name-label">Игрок: <span class="edit-link" onclick="editName()">(изм.)</span></div>
+            <div class="player-name-val" id="displayName">Аноним</div>
+        </div>
+        
+        <div class="legal-checkbox-area">
+            <input type="checkbox" id="legalCheck" onchange="toggleSaveBtn()">
+            <label for="legalCheck">Я согласен на <span class="legal-link" onclick="openPolicy()">обработку данных</span></label>
+        </div>
+
+        <button id="saveBtn" onclick="saveScore()" disabled>СОХРАНИТЬ В ТОП</button>
     </div>
 
     <div id="screen-leaders" class="screen">
-        <h3>ТОП ИГРОКОВ</h3>
-        <div class="leaderboard-box" id="leaderList"></div>
-        <button onclick="location.reload()" style="background: #333;">НАЗАД</button>
+        <h3>ТАБЛИЦА ЛИДЕРОВ</h3>
+        <div class="leader-tabs">
+            <div class="leader-tab active-tab" id="tabSprint" onclick="switchLeaderTab('sprint')">⚡️ СПРИНТ</div>
+            <div class="leader-tab" id="tabSurvival" onclick="switchLeaderTab('survival')">💀 ВЫЖИВАНИЕ</div>
+            <div class="leader-tab" id="tabRhythm" onclick="switchLeaderTab('rhythm')">🎵 РИТМ</div>
+        </div>
+        <div class="leaderboard-box" id="leaderList"><div style="padding:20px;">Загрузка...</div></div>
+        <button id="leaderBackBtn" onclick="location.reload()" style="background: #333;">ИГРАТЬ СНОВА</button>
     </div>
 
     <script>
         // --- CONFIG ---
-        const HIT_DELAY_MS = 200; // Ждем 200мс после удара (защита от эха)
+        const HIT_DELAY_MS = 200; // Protection from echo/double hits
         
         // --- STATE ---
         let audioCtx, analyser, gainNode;
         let isRunning = false;
-        let score = 0;
-        let timeLeft = 60;
-        let currentMode = 'sprint';
+        let score = 0, lastHitTime = 0;
+        let currentMode = 'sprint'; 
+        let timeLeft = 60.0;
         
-        // --- AUDIO VARS ---
-        let noiseFloor = -80; // dB
-        let lastHitTime = 0;
+        // Audio Vars
+        let noiseFloor = -80; // dB Baseline
+        let SETTING_GAIN = 5; // Default 5x gain
+        let SETTING_SENS = 15; // Default 15dB diff
         
-        // Settings defaults
-        let SETTING_GAIN = 5; // Pre-amp gain
-        let SETTING_SENS = 15; // Threshold delta
+        // Stats
+        let totalHits = 0;
+        let personalBest = 0;
+        let timerInterval, metronomeInterval;
+        let currentTheme = 'default';
+
+        // THEMES CONFIG
+        const THEMES = {
+            'default': { name: 'Неон (Стандарт)', color: '#ff0055', bg1: '#1a0b0b', bg2: '#000000', cost: 0 },
+            'cyber': { name: 'Кибер (500 уд.)', color: '#00ccff', bg1: '#0b1a1a', bg2: '#000000', cost: 500 },
+            'toxic': { name: 'Токсик (1к уд.)', color: '#00ff88', bg1: '#0b1a0b', bg2: '#000000', cost: 1000 },
+            'gold': { name: 'ЭЛИТА (5к уд.)', color: '#FFD700', bg1: '#1a1500', bg2: '#000000', cost: 5000 }
+        };
 
         window.onload = function() {
             if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
@@ -200,22 +330,39 @@
             // Load Settings
             if(localStorage.getItem('box_gain')) SETTING_GAIN = parseInt(localStorage.getItem('box_gain'));
             if(localStorage.getItem('box_sens')) SETTING_SENS = parseInt(localStorage.getItem('box_sens'));
-            
             updateUIControls();
+
+            // Load Stats
+            totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
+            document.getElementById('totalHitsLogin').innerText = totalHits.toLocaleString();
+            
+            // Load Theme
+            const savedTheme = localStorage.getItem('box_theme');
+            if(savedTheme && THEMES[savedTheme]) applyTheme(savedTheme);
 
             if (localStorage.getItem('box_auth') === 'true') {
                 showScreen('screen-game');
+                showToast(); 
             }
         };
+        
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 4000);
+        }
 
         function updateUIControls() {
             document.getElementById('gainRange').value = SETTING_GAIN;
             document.getElementById('gainVal').innerText = SETTING_GAIN + "x";
-            
             document.getElementById('sensRange').value = SETTING_SENS;
             document.getElementById('sensVal').innerText = SETTING_SENS + "dB";
             
-            // Если игра запущена, обновляем GainNode на лету
+            // Move threshold marker
+            let thrPct = (noiseFloor + SETTING_SENS + 60) * 2;
+            if(thrPct < 0) thrPct = 0; if(thrPct>100) thrPct=100;
+            document.getElementById('micThresh').style.left = thrPct + "%";
+
             if(gainNode) gainNode.gain.setTargetAtTime(SETTING_GAIN, audioCtx.currentTime, 0.1);
         }
 
@@ -227,17 +374,22 @@
             updateUIControls();
         }
 
-        // --- CORE AUDIO ENGINE ---
-        async function startAudioEngine() {
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
+        // --- CORE AUDIO ENGINE (UPDATED FOR IOS) ---
+        async function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+            return audioCtx;
+        }
 
-                // 1. Get Mic Stream (Raw)
+        async function startListening() {
+            try {
+                await initAudio();
+                
+                // Raw Stream
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: false,
-                        autoGainControl: false, // Try to disable system AGC
+                        autoGainControl: false,
                         noiseSuppression: false,
                         latency: 0
                     }
@@ -245,181 +397,381 @@
 
                 const source = audioCtx.createMediaStreamSource(stream);
                 analyser = audioCtx.createAnalyser();
-                analyser.smoothingTimeConstant = 0.1; // Fast reaction
+                analyser.smoothingTimeConstant = 0.1;
                 analyser.fftSize = 512;
 
-                // 2. Create Chain Nodes
+                // Chain: Source -> HP -> LP -> Gain -> Analyser
                 const highPass = audioCtx.createBiquadFilter();
-                highPass.type = 'highpass'; highPass.frequency.value = 300;
+                highPass.type = 'highpass'; highPass.frequency.value = 300; 
 
                 const lowPass = audioCtx.createBiquadFilter();
                 lowPass.type = 'lowpass'; lowPass.frequency.value = 1200;
 
-                gainNode = audioCtx.createGain(); // 🚀 THE BOOSTER
+                gainNode = audioCtx.createGain(); 
                 gainNode.gain.value = SETTING_GAIN;
 
-                // 3. Connect: Source -> HP -> LP -> GAIN -> Analyser
                 source.connect(highPass);
                 highPass.connect(lowPass);
                 lowPass.connect(gainNode);
                 gainNode.connect(analyser);
 
-                processLoop();
+                processAudioLoop();
 
             } catch (e) {
-                alert("Ошибка микрофона: " + e.message);
+                alert("Ошибка доступа к микрофону: " + e.message);
             }
         }
 
-        function processLoop() {
-            if(!isRunning) return;
-            requestAnimationFrame(processLoop);
+        function processAudioLoop() {
+            if(!isRunning && document.getElementById('calibModal').style.display === 'none') return;
+            requestAnimationFrame(processAudioLoop);
 
             const bufferLength = analyser.frequencyBinCount;
-            const data = new Uint8Array(bufferLength);
-            analyser.getByteTimeDomainData(data);
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
 
-            // 1. Calculate RMS
+            // RMS
             let sum = 0;
             for(let i = 0; i < bufferLength; i++) {
-                let x = (data[i] - 128) / 128.0;
+                let x = (dataArray[i] - 128) / 128.0;
                 sum += x * x;
             }
             let rms = Math.sqrt(sum / bufferLength);
 
-            // 2. Convert to Decibels (dB)
-            // Add epsilon to avoid log(0) = -Infinity
+            // Decibels
             let db = 20 * Math.log10(rms + 0.0000001); 
 
-            // 3. Dynamic Noise Floor
-            // logic: Drop fast to noise, Rise VERY slow to hits
+            // Dynamic Noise Floor (Adaptive)
             if (db < noiseFloor) {
-                noiseFloor = noiseFloor * 0.90 + db * 0.10; // Fall fast
+                noiseFloor = noiseFloor * 0.90 + db * 0.10; // Drop fast
             } else {
-                noiseFloor = noiseFloor * 0.999 + db * 0.001; // Rise extremely slow
+                noiseFloor = noiseFloor * 0.999 + db * 0.001; // Rise slow
             }
 
-            // 4. Hit Detection Logic
+            // Visuals
             const threshold = noiseFloor + SETTING_SENS;
             const now = Date.now();
-            const isHold = (now - lastHitTime < HIT_DELAY_MS); // Debounce check
-
-            let isHit = false;
-            if (db > threshold && !isHold) {
-                isHit = true;
-                lastHitTime = now;
-                registerHit();
+            const diff = (db - noiseFloor).toFixed(1);
+            
+            // Update Debug Line
+            const debugEl = document.getElementById('debugLine');
+            if(debugEl) {
+                debugEl.innerHTML = `Sig: ${db.toFixed(1)} | Thr: ${threshold.toFixed(1)} | Diff: ${diff}`;
+                debugEl.style.color = (db > threshold) ? '#fff' : '#00ff88';
             }
 
-            // 5. Update Debug Info (Realtime)
-            const diff = (db - noiseFloor).toFixed(1);
-            const dbStr = db.toFixed(1);
-            const thrStr = threshold.toFixed(1);
-            
-            // Visual Debug Line
-            const debugEl = document.getElementById('debugLine');
-            debugEl.innerHTML = `Sig: ${dbStr} | Thr: ${thrStr} | <span style="color:${isHit?'#fff':'#888'}">Diff: ${diff}</span>`;
-            if(isHit) debugEl.style.background = "var(--primary)";
-            else debugEl.style.background = "rgba(0,0,0,0.5)";
-
-            // 6. Visual Bar (Normalized -60db to 0db)
-            let visPct = (db + 60) * 2; 
-            if(visPct<0) visPct=0; if(visPct>100) visPct=100;
+            // Update Bars
+            let visPct = (db + 60) * 2; if(visPct<0)visPct=0; if(visPct>100)visPct=100;
             document.getElementById('micLevel').style.width = visPct + "%";
             
-            // Threshold marker visual
-            let thrPct = (threshold + 60) * 2;
+            let thrPct = (threshold + 60) * 2; if(thrPct<0)thrPct=0; if(thrPct>100)thrPct=100;
             document.getElementById('micThresh').style.left = thrPct + "%";
+
+            // Hit Detection (Only if game running)
+            if(isRunning) {
+                if (db > threshold && (now - lastHitTime > HIT_DELAY_MS)) {
+                    registerHit();
+                    lastHitTime = now;
+                }
+            }
         }
 
+        // --- GAMEPLAY ---
         function registerHit() {
-            score++;
+            score++; 
             const el = document.getElementById('scoreDisplay');
             el.innerText = score;
             el.classList.add('shake');
             el.classList.add('hit');
-            setTimeout(() => {
-                el.classList.remove('shake'); 
-                el.classList.remove('hit');
-            }, 150);
+            setTimeout(()=> { el.classList.remove('shake'); el.classList.remove('hit'); }, 150);
 
-            // Survival Mode Logic
-            if(currentMode === 'survival') {
-                timeLeft += 0.5; if(timeLeft > 10) timeLeft = 10;
+            if (currentMode === 'survival') {
+                timeLeft += 0.5; if (timeLeft > 10) timeLeft = 10;
                 document.getElementById('timer').innerText = Math.floor(timeLeft);
             }
-            
-            playSound();
+            playSound('hit'); 
         }
 
-        function playSound() {
-            // Simple Beep
-            const osc = audioCtx.createOscillator();
+        function playSound(type) {
+            const osc = audioCtx.createOscillator(); 
             const g = audioCtx.createGain();
             osc.connect(g); g.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-            g.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            
+            if (type === 'hit') {
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                g.gain.setValueAtTime(0.3, audioCtx.currentTime); 
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'tick') {
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                g.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.type = 'square'; osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            }
         }
 
-        // --- GAME LOGIC ---
+        // --- CALIBRATION ---
+        async function startAutoCalibration() {
+            document.getElementById('settingsPanel').style.display = 'none';
+            document.getElementById('calibModal').style.display = 'flex';
+            
+            await initAudio();
+            // Start listening temporarily to update noiseFloor var
+            if(!analyser) {
+                // If not started yet, simple init
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const source = audioCtx.createMediaStreamSource(stream);
+                    analyser = audioCtx.createAnalyser();
+                    analyser.fftSize = 512;
+                    source.connect(analyser);
+                    processAudioLoop(); // Start the loop to update noiseFloor
+                } catch(e) {}
+            }
+
+            let timeLeft = 10;
+            const timerInt = setInterval(() => {
+                timeLeft--;
+                document.getElementById('calibTimer').innerText = timeLeft;
+                document.getElementById('calibBar').style.width = ((10 - timeLeft) / 10 * 100) + "%";
+                if(timeLeft <= 0) {
+                    clearInterval(timerInt);
+                    document.getElementById('calibModal').style.display = 'none';
+                    alert(`Готово!\nБазовый уровень шума: ${noiseFloor.toFixed(1)}dB`);
+                }
+            }, 1000);
+        }
+
+        // --- GAME CONTROLS ---
         const startBtn = document.getElementById('startBtn');
         startBtn.addEventListener('click', async () => {
             if(isRunning) return;
-            await startAudioEngine();
+            await startListening();
             
-            // Hide UI
-            startBtn.style.display = 'none';
+            startBtn.style.display = 'none'; document.getElementById('settingsPanel').style.display = 'none';
             document.querySelector('.mode-selector').style.opacity = '0.3';
+            document.querySelector('.secondary-btn').style.display = 'none'; 
             
-            isRunning = true; 
-            score = 0; 
-            document.getElementById('scoreDisplay').innerText = 0;
-            
+            isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
             timeLeft = (currentMode === 'survival') ? 10 : 60;
             document.getElementById('timer').innerText = timeLeft;
 
-            const timerInt = setInterval(() => {
-                timeLeft -= 1;
-                document.getElementById('timer').innerText = Math.floor(timeLeft);
-                if(timeLeft <= 0) {
-                    clearInterval(timerInt);
-                    isRunning = false;
-                    finishGame();
-                }
+            if (timerInterval) clearInterval(timerInterval);
+            if (metronomeInterval) clearInterval(metronomeInterval);
+
+            if(currentMode === 'rhythm') {
+                playSound('tick');
+                metronomeInterval = setInterval(() => { if(isRunning) playSound('tick'); }, 600);
+            }
+
+            timerInterval = setInterval(() => { 
+                timeLeft -= 1; document.getElementById('timer').innerText = Math.floor(timeLeft); 
+                if(timeLeft <= 0) { 
+                    clearInterval(timerInterval); if(metronomeInterval) clearInterval(metronomeInterval);
+                    isRunning = false; finishGame(); 
+                } 
             }, 1000);
         });
 
-        function finishGame() {
-            showScreen('screen-save');
-            document.getElementById('finalScore').innerText = score;
+        function finishGame() { 
+            isRunning = false; launchConfetti();
+            
+            const cals = Math.floor(score * 0.05); 
+            let rank = "НОВИЧОК";
+            if(score > 30) rank = "ЛЮБИТЕЛЬ";
+            if(score > 60) rank = "БОЕЦ";
+            if(score > 100) rank = "МАШИНА";
+            if(score > 150) rank = "ЛЕГЕНДА";
+
+            totalHits += score;
+            localStorage.setItem('box_total_hits', totalHits);
+
+            document.getElementById('finalScore').innerText = score; 
+            document.getElementById('resCalories').innerText = cals;
+            document.getElementById('resMode').innerText = currentMode.toUpperCase();
+            document.getElementById('rankDisplay').innerText = rank;
+            
+            personalBest = parseInt(localStorage.getItem('box_pb_' + currentMode)) || 0;
+            if (score > personalBest && score > 10) {
+                localStorage.setItem('box_pb_' + currentMode, score);
+                document.getElementById('recordMsg').innerText = "🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД!";
+                document.getElementById('reviewModal').style.display = 'flex';
+            } else {
+                document.getElementById('recordMsg').innerText = "";
+            }
+
+            document.querySelector('.mode-selector').style.opacity = '1';
+            document.getElementById('legalCheck').checked = false;
+            
+            checkSavedName(); 
+            toggleSaveBtn(); 
+            showScreen('screen-save'); 
         }
 
-        // --- NAVIGATION & UTILS ---
-        function checkCode() {
-            if(VALID_CODES.includes(document.getElementById('passInput').value.trim())) {
-                localStorage.setItem('box_auth', 'true');
-                showScreen('screen-game');
-            } else {
-                document.getElementById('errorMsg').style.display = 'block';
+        // --- SKINS LOGIC ---
+        function openSkins() {
+            const grid = document.getElementById('skinsGrid');
+            grid.innerHTML = '';
+            for (const [key, theme] of Object.entries(THEMES)) {
+                const locked = totalHits < theme.cost;
+                const active = currentTheme === key ? 'active-skin' : '';
+                const lockIcon = locked ? '<div class="lock-icon">🔒</div>' : '';
+                const opacity = locked ? '0.5' : '1';
+                grid.innerHTML += `
+                <div class="skin-card ${active}" style="opacity:${opacity}" onclick="selectTheme('${key}', ${theme.cost})">
+                    <div class="skin-color" style="background:${theme.color}"></div>
+                    <div class="skin-name">${theme.name}</div>
+                    ${lockIcon}
+                </div>`;
             }
+            document.getElementById('settingsPanel').style.display = 'none';
+            document.getElementById('skinsModal').style.display = 'flex';
+        }
+
+        function selectTheme(key, cost) {
+            if (totalHits < cost) {
+                alert(`Нужно набрать ${cost} ударов! У тебя пока ${totalHits}.`);
+                return;
+            }
+            applyTheme(key);
+            document.getElementById('skinsModal').style.display = 'none';
+        }
+
+        function applyTheme(key) {
+            currentTheme = key;
+            localStorage.setItem('box_theme', key);
+            const t = THEMES[key];
+            const root = document.documentElement;
+            root.style.setProperty('--primary', t.color);
+            root.style.setProperty('--bg-grad-start', t.bg1);
+            root.style.setProperty('--bg-grad-end', t.bg2);
+        }
+
+        // --- LEADERBOARD & DATA ---
+        function saveScore() {
+            let name = "";
+            const savedName = localStorage.getItem('box_username');
+            if (savedName && document.getElementById('nameDisplayArea').style.display !== 'none') {
+                name = savedName;
+            } else {
+                name = document.getElementById('nicknameInput').value.trim();
+                if(name.length < 2) { alert("Введите имя!"); return; }
+                localStorage.setItem('box_username', name); 
+            }
+
+            const btn = document.querySelector('#screen-save button');
+            btn.innerText = "ОТПРАВКА..."; btn.disabled = true;
+            
+            fetch(GOOGLE_SCRIPT_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ name: name, score: score, mode: currentMode, date: new Date().toLocaleDateString() }) 
+            })
+            .then(() => showLeaderboard(false, currentMode))
+            .catch(() => {
+                alert("Ошибка сети, но результат сохранен локально.");
+                showLeaderboard(false, currentMode);
+            });
+        }
+
+        function showLeaderboard(fromMenu = false, initialMode = 'sprint') {
+            showScreen('screen-leaders');
+            const backBtn = document.getElementById('leaderBackBtn');
+            if(fromMenu) {
+                backBtn.innerText = "НАЗАД В МЕНЮ";
+                backBtn.onclick = function() { showScreen('screen-game'); };
+            } else {
+                backBtn.innerText = "ИГРАТЬ СНОВА";
+                backBtn.onclick = function() { location.reload(); };
+            }
+            switchLeaderTab(initialMode);
+        }
+
+        function switchLeaderTab(mode) {
+            document.querySelectorAll('.leader-tab').forEach(t => t.className = 'leader-tab');
+            document.getElementById('tab' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active-tab');
+            fetchLeaderboardData(mode);
+        }
+
+        function fetchLeaderboardData(mode) {
+            const list = document.getElementById('leaderList'); 
+            list.innerHTML = "<div style='padding:20px'>Загрузка...</div>";
+            fetch(GOOGLE_SCRIPT_URL + "?mode=" + mode)
+            .then(r=>r.json())
+            .then(data => {
+                list.innerHTML = "";
+                if(!data.length) list.innerHTML = "<div style='padding:20px'>Пока пусто</div>";
+                data.forEach((row, i) => {
+                    list.innerHTML += `
+                    <div class="leader-row">
+                        <div class="leader-left">
+                            <span class="leader-name">#${i+1} ${row.name}</span>
+                            <span class="leader-date">${row.date || ''}</span>
+                        </div>
+                        <span class="leader-score">${row.score}</span>
+                    </div>`;
+                });
+            })
+            .catch(e => { list.innerHTML = "<div style='padding:20px'>Ошибка загрузки.</div>"; });
+        }
+
+        // --- UTILS ---
+        function checkCode() { 
+            const val = document.getElementById('passInput').value.trim();
+            if(VALID_CODES.includes(val)) { 
+                localStorage.setItem('box_auth', 'true'); 
+                showScreen('screen-game'); 
+                showToast(); 
+            } 
+            else { document.getElementById('errorMsg').style.display = 'block'; }
         }
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-        function toggleSettings() { const s = document.getElementById('settingsPanel'); s.style.display = (s.style.display==='block')?'none':'block'; }
-        function setMode(m) { 
-            if(isRunning) return; 
-            currentMode = m; 
-            document.querySelectorAll('.mode-btn').forEach(b => b.className='mode-btn');
-            document.getElementById(m==='sprint'?'btnSprint':'btnSurvival').classList.add('active-mode');
-            document.getElementById('timer').innerText = (m==='survival')?10:60;
+        function logout() { localStorage.removeItem('box_auth'); location.reload(); }
+        function checkSavedName() {
+            const savedName = localStorage.getItem('box_username');
+            if(savedName) {
+                document.getElementById('nameInputArea').style.display = 'none';
+                document.getElementById('nameDisplayArea').style.display = 'block';
+                document.getElementById('displayName').innerText = savedName;
+            } else {
+                document.getElementById('nameInputArea').style.display = 'block';
+                document.getElementById('nameDisplayArea').style.display = 'none';
+            }
         }
-        function saveScore() {
-            const btn = document.getElementById('saveBtn');
-            btn.innerText = "ОТПРАВКА...";
-            // Mock Save
-            setTimeout(() => { btn.innerText = "СОХРАНЕНО"; setTimeout(()=>location.reload(), 1000); }, 1000);
+        function editName() {
+            document.getElementById('nameInputArea').style.display = 'block';
+            document.getElementById('nameDisplayArea').style.display = 'none';
+        }
+        function toggleSaveBtn() { document.getElementById('saveBtn').disabled = !document.getElementById('legalCheck').checked; }
+        function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
+        function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
+        function openReviewLink(url) { window.Telegram.WebApp.openLink(url); document.getElementById('reviewModal').style.display = 'none'; }
+        function setMode(mode) {
+            if(isRunning) return;
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.className = 'mode-btn');
+            if(mode === 'sprint') {
+                document.getElementById('btnSprint').className += ' active-mode';
+                document.getElementById('timer').innerText = "60";
+            } else if (mode === 'survival') {
+                document.getElementById('btnSurvival').className += ' active-mode';
+                document.getElementById('timer').innerText = "10";
+            } else if (mode === 'rhythm') {
+                document.getElementById('btnRhythm').className += ' active-mode';
+                document.getElementById('timer').innerText = "60";
+            }
+        }
+        function launchConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            for(let i=0; i<30; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random()*100 + 'vw';
+                c.style.background = colors[Math.floor(Math.random()*colors.length)];
+                c.style.animationDuration = (Math.random()*2+2) + 's';
+                document.body.appendChild(c);
+                setTimeout(()=>c.remove(), 4000);
+            }
         }
     </script>
 </body>
