@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Russia</title>
+    <title>BoxBall Pro</title>
     
     <script>
-        const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
-        const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА";
-       
+        const GOOGLE_SCRIPT_URL = "ВСТАВЬ_СЮДА_ССЫЛКУ_НА_СКРИПТ"; 
+        const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА";
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
         const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";    
-       
         const VALID_CODES = ["6433", "0309", "5528"];
         const CHANNEL_URL = "https://t.me/DUROV";
     </script>
@@ -22,405 +20,207 @@
             --accent: #ffcc00;
             --bg-grad-start: #1a0b0b;
             --bg-grad-end: #000000;
-            --text-color: white;
-            --nav-height: 70px; /* Высота меню */
+            --nav-height: 70px;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: radial-gradient(circle at center, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
-            color: var(--text-color); display: flex; flex-direction: column; align-items: center;
+            color: white; display: flex; flex-direction: column; align-items: center;
             height: 100vh; margin: 0; overflow: hidden; text-align: center;
             user-select: none; -webkit-tap-highlight-color: transparent;
-            transition: background 0.5s;
         }
 
-        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; padding-bottom: calc(var(--nav-height) + 20px); box-sizing: border-box; opacity: 0; transition: opacity 0.3s; }
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; padding-bottom: 90px; box-sizing: border-box; opacity: 0; transition: opacity 0.3s; }
         .active { display: flex; opacity: 1; }
 
         /* ИГРОВОЙ КРУГ */
         .score-circle {
             width: 210px; height: 210px; border-radius: 50%; border: 8px solid #333;
             display: flex; align-items: center; justify-content: center;
-            font-size: 90px; font-weight: 900; margin: 10px 0;
+            font-size: 90px; font-weight: 900; margin: 20px 0;
             background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 70%);
             transition: border-color 0.1s; position: relative; z-index: 2;
         }
-       
-        /* Визуализатор громкости */
-        .volume-meter {
-            width: 240px; height: 16px; background: #222; border-radius: 8px; margin-top: 15px;
-            position: relative; overflow: hidden; border: 1px solid #444;
-        }
-        .volume-bar {
-            height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
-        }
-       
-        .volume-threshold {
-            position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5;
-            left: 20%; box-shadow: 0 0 8px #ff0055; transition: left 0.2s; opacity: 0.8;
-        }
-       
-        .last-hit-info {
-            font-size: 12px; color: #aaa; margin-top: 8px; font-family: monospace; font-weight: bold;
-        }
-       
-        @keyframes shake-anim {
-            0% { transform: translate(1px, 1px); } 25% { transform: translate(-2px, -2px); }
-            50% { transform: translate(2px, 0px); } 75% { transform: translate(-1px, 2px); } 100% { transform: translate(0, 0); }
-        }
-        .shake { animation: shake-anim 0.1s; }
-
-        /* ПУЛЬСАЦИЯ (Дыхание) */
-        @keyframes pulse-anim {
-            0% { transform: scale(1); border-color: #333; }
-            50% { transform: scale(1.02); border-color: #444; }
-            100% { transform: scale(1); border-color: #333; }
-        }
+        
         .pulse { animation: pulse-anim 2s infinite ease-in-out; }
+        @keyframes pulse-anim { 0% { transform: scale(1); border-color: #333; } 50% { transform: scale(1.02); border-color: #555; } 100% { transform: scale(1); border-color: #333; } }
+        
+        .hit { border-color: var(--primary) !important; box-shadow: 0 0 50px var(--primary); color: var(--primary); animation: none; transform: scale(1.05); }
+        .shake { animation: shake-anim 0.1s; }
+        @keyframes shake-anim { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(0, 0); } }
 
-        .hit { border-color: var(--primary) !important; box-shadow: 0 0 50px var(--primary); color: var(--primary); animation: none; }
+        /* Визуализатор */
+        .volume-meter { width: 240px; height: 10px; background: #222; border-radius: 5px; margin-top: 10px; position: relative; overflow: hidden; }
+        .volume-bar { height: 100%; background: #00ff88; width: 0%; transition: width 0.05s; }
+        .volume-threshold { position: absolute; top:0; bottom:0; width: 2px; background: #ff0055; left: 0%; z-index: 5; }
 
+        /* КНОПКИ */
         button {
-            padding: 16px 0; font-size: 17px; font-weight: 800; background: var(--primary); color: white; border: none; border-radius: 14px;
-            width: 100%; max-width: 280px; margin-top: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; z-index: 5;
-            transition: background 0.3s;
+            padding: 16px; font-size: 16px; font-weight: 800; background: var(--primary); color: white; border: none; border-radius: 14px;
+            width: 100%; max-width: 280px; margin-top: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         button:active { transform: scale(0.96); }
-        button:disabled { background: #444; color: #888; box-shadow: none; cursor: not-allowed; }
-        button.channel-btn { background: #2AABEE; color: white; box-shadow: 0 4px 15px rgba(42, 171, 238, 0.3); }
-        button.secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; box-shadow: none; font-size: 14px; margin-top: 15px; padding: 12px; }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; box-shadow: none; }
+        .secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; margin-top: 15px; padding: 12px; font-size: 12px; }
 
-        /* ВЫБОР РЕЖИМА */
-        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; width: 95%; max-width: 340px; }
-        .mode-btn { flex: 1; padding: 10px 5px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 11px; font-weight: bold; margin: 0; box-shadow: none; }
-        .mode-btn.active-mode { background: var(--primary); color: white; border-color: var(--primary); }
-
-        /* НАСТРОЙКИ (ОПЦИИ) */
-        .settings-panel { display: none; width: 100%; flex-direction: column; align-items: center; } /* Теперь это часть экрана, а не попап */
-        input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); cursor: pointer; }
-       
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; color: #ccc; width: 100%; max-width: 280px;}
-        .toggle-switch { width: 40px; height: 20px; background: #555; border-radius: 10px; position: relative; cursor: pointer; }
-        .toggle-switch.on { background: var(--primary); }
-        .toggle-knob { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; }
-        .toggle-switch.on .toggle-knob { left: 22px; }
-
-        /* ЛИДЕРБОРД */
-        .leaderboard-box { background: rgba(0,0,0,0.3); width: 100%; max-height: 50vh; overflow-y: auto; border-radius: 16px; margin: 15px 0; }
-        .leader-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .leader-name { font-size: 14px; font-weight: bold; display: block; color: #eee; text-align: left; }
-        .leader-date { font-size: 10px; color: #888; display: block; margin-top: 3px; text-align: left; }
-        .leader-score { font-size: 18px; font-weight: bold; color: #fff; }
-        .leader-row:nth-child(1) .leader-name, .leader-row:nth-child(1) .leader-score { color: var(--accent); }
-
-        .shield-icon { font-size: 10px; color: #00ff88; margin-bottom: 10px; border: 1px solid #00ff88; padding: 4px 8px; border-radius: 20px; align-self: center; margin-top: 10px; }
-        .legal-checkbox-area { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; width: 90%; max-width: 300px; text-align: left; font-size: 11px; color: #aaa; }
-        .legal-link { color: var(--primary); text-decoration: underline; cursor: pointer; }
-
-        /* МАГАЗИН СКИНОВ */
-        .skins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; max-width: 320px;}
-        .skin-card { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 10px; padding: 10px; cursor: pointer; position: relative; opacity: 0.5; }
-        .skin-card.unlocked { opacity: 1; border-color: #666; }
-        .skin-card.active-skin { border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
-        .skin-color { width: 30px; height: 30px; border-radius: 50%; margin: 0 auto 5px; }
-        .skin-name { font-size: 12px; font-weight: bold; }
-        .lock-icon { font-size: 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; }
-
-        /* ОКНА */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
-        .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid var(--primary); text-align: center; width: 85%; max-width: 320px; max-height: 80vh; overflow-y: auto; }
-
-        /* КАЛИБРОВКА */
-        .calibration-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .calib-circle { width: 180px; height: 180px; border: 5px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; color: #00ff88; margin-bottom: 20px; background: rgba(0,255,136,0.1); }
-        .calib-progress { width: 80%; height: 4px; background: #333; margin-top: 20px; border-radius: 2px; }
-        .calib-bar { height: 100%; width: 0%; background: #00ff88; transition: width 1s linear; }
-       
-        /* УВЕДОМЛЕНИЕ (ТОСТ) */
-        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff88; z-index: 150; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
-        .toast.show { opacity: 1; }
-
-        .career-box { margin-bottom: 20px; padding: 10px; border-top: 1px solid #333; border-bottom: 1px solid #333; width: 100%; }
-        .career-text { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-        .career-num { font-size: 24px; color: #fff; font-weight: 900; }
-        .rank-badge { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; }
-       
-        .confetti { position: absolute; width: 10px; height: 10px; animation: fall linear forwards; z-index: 100; }
-        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
-       
-        /* Вкладки лидерборда */
-        .leader-tabs { display: flex; width: 100%; margin-bottom: 10px; border-bottom: 1px solid #444; }
-        .leader-tab { flex: 1; padding: 10px; font-size: 10px; font-weight: bold; color: #666; cursor: pointer; }
-        .leader-tab.active-tab { color: #ff0055; border-bottom: 2px solid #ff0055; }
-        .leader-tab.survival-tab.active-tab { color: #ffcc00; border-bottom: 2px solid #ffcc00; }
-        .leader-tab.rhythm-tab.active-tab { color: #00ff88; border-bottom: 2px solid #00ff88; }
-       
-        /* Профиль */
-        .player-profile { width: 80%; text-align: left; margin-bottom: 15px; border: 1px solid #444; border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.05); }
-        .player-name-label { font-size: 10px; color: #888; }
-        .player-name-val { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
-        .edit-link { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; float: right; }
-
-        /* НИЖНЕЕ МЕНЮ (НОВОЕ) */
+        /* НИЖНЕЕ МЕНЮ */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height);
-            background: rgba(20, 20, 20, 0.98); backdrop-filter: blur(10px);
+            background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(10px);
             border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center;
-            z-index: 1000; padding-bottom: 10px; /* Safe area */
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+            z-index: 1000; padding-bottom: 10px; 
         }
         .nav-item {
             display: flex; flex-direction: column; align-items: center; color: #666; font-size: 9px; font-weight: bold;
-            background: none; border: none; box-shadow: none; padding: 5px; margin: 0; width: auto; max-width: none;
-            cursor: pointer;
+            background: none; border: none; box-shadow: none; padding: 5px; margin: 0; width: auto;
         }
         .nav-item.active-nav { color: var(--primary); }
-        .nav-icon { font-size: 22px; margin-bottom: 3px; transition: transform 0.2s; }
-        .nav-item:active .nav-icon { transform: scale(0.8); }
+        .nav-icon { font-size: 24px; margin-bottom: 3px; }
+
+        /* MODALS */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
+        .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 1px solid var(--primary); text-align: center; width: 85%; max-width: 320px; }
+        
+        /* КАЛИБРОВКА */
+        .calib-circle { width: 150px; height: 150px; border: 4px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #00ff88; margin: 0 auto 20px; }
+        
+        /* Стили элементов */
+        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; width: 95%; max-width: 340px; }
+        .mode-btn { flex: 1; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .mode-btn.active-mode { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); }
+        .leader-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #333; font-size: 14px; }
+        
+        .confetti { position: absolute; width: 10px; height: 10px; background: #f00; animation: fall 3s linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
     </style>
 </head>
 <body>
 
     <div id="bottomMenu" class="bottom-nav" style="display:none;">
-        <button class="nav-item active-nav" id="navGame" onclick="switchScreen('game')">
-            <span class="nav-icon">🥊</span>ИГРА
-        </button>
-        <button class="nav-item" id="navSkins" onclick="switchScreen('skins')">
-            <span class="nav-icon">🎒</span>СКИНЫ
-        </button>
-        <button class="nav-item" id="navLeaders" onclick="switchScreen('leaders')">
-            <span class="nav-icon">🏆</span>ТОП
-        </button>
-        <button class="nav-item" id="navSettings" onclick="switchScreen('settings')">
-            <span class="nav-icon">⚙️</span>ОПЦИИ
-        </button>
+        <button class="nav-item active-nav" id="navGame" onclick="switchScreen('game')"><span class="nav-icon">🥊</span>ИГРА</button>
+        <button class="nav-item" id="navSkins" onclick="switchScreen('skins')"><span class="nav-icon">🎒</span>СКИНЫ</button>
+        <button class="nav-item" id="navLeaders" onclick="switchScreen('leaders')"><span class="nav-icon">🏆</span>ТОП</button>
+        <button class="nav-item" id="navSettings" onclick="switchScreen('settings')"><span class="nav-icon">⚙️</span>ОПЦИИ</button>
     </div>
 
-    <div id="calibModal" class="calibration-overlay">
-        <h2 style="color:white; margin-bottom:5px;">🥊 БЕЙ ПО МЯЧУ!</h2>
-        <p style="color:#aaa; max-width:80%; font-size:14px; margin-bottom:20px;">Набивай в обычном ритме 30 секунд.<br>Мы настроим микрофон под твой удар.</p>
-        <div class="calib-circle" id="calibTimer">30</div>
-        <div class="calib-progress"><div class="calib-bar" id="calibBar"></div></div>
-        <p style="color:#666; font-size:12px; margin-top:15px;">Анализ шума и ударов...</p>
+    <div id="calibModal" class="modal-overlay" style="z-index: 300;">
+        <div class="modal-content" style="border-color: #00ff88;">
+            <h2 style="color:#00ff88; margin:0;">НАСТРОЙКА</h2>
+            <p style="color:#aaa; font-size:12px; margin-bottom:20px;">Бей по мячу в своем темпе.<br>Мы запомним силу удара.</p>
+            <div class="calib-circle" id="calibTimer">15</div>
+            <div class="volume-meter"><div class="volume-bar" id="calibBarVisual"></div></div>
+            <p id="calibStatus" style="font-size:10px; margin-top:10px; color:#666;">Слушаем...</p>
+        </div>
     </div>
-    
-    <div id="toast" class="toast">📢 Новое место? Сделай калибровку в опциях!</div>
 
     <div id="reviewModal" class="modal-overlay">
         <div class="modal-content">
-            <div style="font-size: 24px; margin-bottom: 10px;">🎉 НОВЫЙ РЕКОРД!</div>
-            <div style="color: #ccc; font-size: 14px; margin-bottom: 20px;">
-                Ты машина! 🤖<br>Помоги нам стать лучше — оставь отзыв.
-            </div>
-            <p style="font-size:12px; color:#888; margin-bottom:5px;">ВЫБЕРИ СВОЙ НАБОР:</p>
-            <button onclick="openReviewLink(WB_URL_SINGLE)" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ МЯЧ 60гр (1шт)</button>
-            <button onclick="openReviewLink(WB_URL_SET)" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ НАБОР (3шт)</button>
-            <button onclick="document.getElementById('reviewModal').style.display='none'" style="background: transparent; border: 1px solid #555;">ПОЗЖЕ</button>
+            <div style="font-size: 30px; margin-bottom: 10px;">🏆 РЕКОРД!</div>
+            <p style="color:#ccc; font-size:14px;">Ты разнес этот мяч! 🔥<br>Поделись впечатлениями?</p>
+            <button onclick="window.Telegram.WebApp.openLink(WB_URL_SINGLE)" style="background: var(--accent); color:black; margin-bottom:10px;">⭐️ ОСТАВИТЬ ОТЗЫВ</button>
+            <button onclick="document.getElementById('reviewModal').style.display='none'" class="secondary-btn" style="margin-top:0;">ПОЗЖЕ</button>
         </div>
     </div>
 
     <div id="screen-login" class="screen active">
-        <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">FILTERED AUDIO</p>
-       
-        <div class="career-box">
-            <div class="career-text">Всего ударов</div>
-            <div class="career-num" id="totalHitsLogin">0</div>
-        </div>
-
-        <input type="text" id="passInput" placeholder="4 ЦИФРЫ ПОД ШТРИХКОДОМ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:16px; margin-bottom:15px; width:80%;">
-        <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
-        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433, 0309 или 5528</p>
-       
-        <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
-            © 2026 BOXBALL RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
-        </div>
+        <h1 style="letter-spacing: 2px;">BOXBALL PRO</h1>
+        <p style="color:#666; font-size:12px; margin-bottom: 30px;">AUDIO ENGINE V3.0</p>
+        <input type="tel" id="passInput" placeholder="КОД (ПОД ШТРИХКОДОМ)" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:18px; width:80%;">
+        <button onclick="checkCode()">ВОЙТИ</button>
+        <p id="errorMsg" style="color:#ff4d4d; display:none; font-size:12px; margin-top:10px;">Код: 6433, 0309 или 5528</p>
     </div>
 
     <div id="screen-game" class="screen">
         <div class="mode-selector">
-            <button class="mode-btn active-mode" id="btnSprint" onclick="setMode('sprint')">⚡️ СПРИНТ</button>
-            <button class="mode-btn" id="btnSurvival" onclick="setMode('survival')">💀 ВЫЖИВАНИЕ</button>
-            <button class="mode-btn" id="btnRhythm" onclick="setMode('rhythm')">🎵 РИТМ</button>
+            <button class="mode-btn active-mode" onclick="setMode('sprint')">⚡️ СПРИНТ</button>
+            <button class="mode-btn" onclick="setMode('survival')">💀 ВЫЖИВАНИЕ</button>
         </div>
 
-        <div style="display:flex; justify-content:center; width:100%; align-items: center; margin-bottom: 5px;">
-            <div style="background:rgba(255,255,255,0.1); padding:8px 25px; border-radius:20px; font-weight:bold; color:#fff; font-size: 42px; min-width: 110px;" id="timer">60</div>
-        </div>
+        <div style="font-size:60px; font-weight:bold; margin:10px 0;" id="timer">60</div>
         
-        <div class="shield-icon">🛡️ ANTI-CHEAT ACTIVE</div>
-       
         <div class="score-circle pulse" id="scoreDisplay">0</div>
-       
+        
         <div class="volume-meter">
-            <div class="volume-bar" id="micLevel"></div>
-            <div class="volume-threshold" id="micThresh"></div>
+            <div class="volume-bar" id="gameMicLevel"></div>
+            <div class="volume-threshold" id="gameMicThresh"></div>
         </div>
-        <div class="last-hit-info">
-            ПИК: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span>
-        </div>
-       
-        <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
+        <div style="font-size:10px; color:#555; margin-top:5px;">SENSITIVITY: <span id="debugSens">0</span></div>
 
         <button id="startBtn">НАЧАТЬ РАУНД</button>
     </div>
 
-    <div id="screen-skins" class="screen">
-        <h3>🎒 РАЗДЕВАЛКА</h3>
-        <p style="font-size:12px; color:#888;">Набивай удары, чтобы открыть стили</p>
-        <div class="skins-grid" id="skinsGrid"></div>
-    </div>
-
     <div id="screen-settings" class="screen">
-        <h3>⚙️ ОПЦИИ</h3>
+        <h3>НАСТРОЙКИ</h3>
+        <button onclick="startCalibration()" style="background: linear-gradient(90deg, #00ff88, #008844); color:black;">🪄 КАЛИБРОВКА (15 сек)</button>
         
-        <div class="settings-panel" style="display:flex;">
-            <div class="toggle-row">
-                <span>🔊 Звук эффектов</span>
-                <div class="toggle-switch on" id="togSound" onclick="toggleOption('sound')"><div class="toggle-knob"></div></div>
-            </div>
-
-            <hr style="border:0; border-top:1px solid #444; margin: 15px 0; width:100%;">
-
-            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА (30 сек)</button>
-           
-            <label style="font-size:12px; color:#ccc;">Порог (Ручной): <span id="sensVal">8</span></label>
-            <input type="range" id="sensRange" min="2" max="100" value="8" oninput="updateSens(this.value)">
-           
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 15px;">Сброс на 8</button>
-           
-            <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; margin-bottom: 5px;">🚪 Выйти из аккаунта</button>
+        <div style="width:100%; text-align:left; margin-top:20px;">
+            <label style="font-size:12px; color:#aaa;">Ручная чувствительность: <span id="sensValDisplay">15</span></label>
+            <input type="range" id="sensRange" min="5" max="100" value="15" oninput="updateSens(this.value)">
         </div>
+
+        <button onclick="logout()" style="background:#330000; border:1px solid red; color:red; margin-top:30px;">ВЫЙТИ</button>
     </div>
 
     <div id="screen-save" class="screen">
-        <div style="font-size:14px; color:#aaa;">ВАШ РЕЗУЛЬТАТ</div>
-        <div class="rank-badge" id="rankDisplay">НОВИЧОК</div>
+        <div style="color:#aaa;">РЕЗУЛЬТАТ</div>
         <h1 style="font-size:80px; margin:0; color:var(--primary);" id="finalScore">0</h1>
-        <div style="font-size:12px; color:var(--accent); font-weight:bold; margin-bottom:10px;" id="recordMsg"></div>
-
-        <div style="display:flex; gap:15px; justify-content:center; margin-bottom:15px;">
-            <div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:5px;">🔥 <span id="resCalories">0</span> ККАЛ</div>
-            <div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:5px;">🎮 <span id="resMode">СПРИНТ</span></div>
-        </div>
-       
-        <div id="nameInputArea">
-            <input type="text" id="nicknameInput" placeholder="Ваше Имя" maxlength="15" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%; margin-bottom: 10px;">
-        </div>
-       
-        <div id="nameDisplayArea" style="display:none;" class="player-profile">
-            <div class="player-name-label">Игрок: <span class="edit-link" onclick="editName()">(изм.)</span></div>
-            <div class="player-name-val" id="displayName">Аноним</div>
-        </div>
-       
-        <div class="legal-checkbox-area">
-            <input type="checkbox" id="legalCheck" onchange="toggleSaveBtn()">
-            <label for="legalCheck">Я согласен на <span class="legal-link" onclick="openPolicy()">обработку данных</span></label>
-        </div>
-
-        <button id="saveBtn" onclick="saveScore()" disabled>СОХРАНИТЬ В ТОП</button>
-        <button onclick="switchScreen('game')" class="secondary-btn">НЕ СОХРАНЯТЬ</button>
+        <div id="newRecordBadge" style="color:var(--accent); font-weight:bold; margin-bottom:15px;"></div>
+        
+        <input type="text" id="nickInput" placeholder="Твое имя" style="padding:15px; background:#222; border:1px solid #444; color:white; border-radius:10px; text-align:center;">
+        <button onclick="saveScore()">СОХРАНИТЬ</button>
+        <button onclick="switchScreen('game')" class="secondary-btn">ЗАКРЫТЬ</button>
     </div>
 
     <div id="screen-leaders" class="screen">
         <h3>ТАБЛИЦА ЛИДЕРОВ</h3>
-        <div class="leader-tabs">
-            <div class="leader-tab active-tab" id="tabSprint" onclick="switchLeaderTab('sprint')">⚡️ СПРИНТ</div>
-            <div class="leader-tab" id="tabSurvival" onclick="switchLeaderTab('survival')">💀 ВЫЖИВАНИЕ</div>
-            <div class="leader-tab" id="tabRhythm" onclick="switchLeaderTab('rhythm')">🎵 РИТМ</div>
-        </div>
-        <div class="leaderboard-box" id="leaderList"><div style="padding:20px;">Загрузка...</div></div>
+        <div id="leaderList" style="width:100%; text-align:left;">Загрузка...</div>
+    </div>
+    
+    <div id="screen-skins" class="screen">
+        <h3>МАГАЗИН</h3>
+        <p style="color:#666;">Скоро...</p>
     </div>
 
     <script>
-        const MIN_HIT_DELAY = 110; 
-        let SENSITIVITY = 8; 
-       
-        let score = 0, isRunning = false, lastHitTime = 0;
-        let currentMode = 'sprint'; 
-        let timeLeft = 60.0;
-        let audioCtx;
-        const synth = window.speechSynthesis;
-        let timerInterval;
-        let metronomeInterval;
-        let totalHits = 0;
+        // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        let audioContext = null;
+        let mediaStream = null;
+        let analyser = null;
+        let scriptProcessor = null;
+        let sensitivity = 15; // Порог по умолчанию
+        let score = 0;
+        let isGameRunning = false;
+        let gameMode = 'sprint';
+        let timeLeft = 60;
+        let timerInterval = null;
+        let lastHitTime = 0;
         let personalBest = 0;
-       
-        let isSoundOn = true;
-        let currentTheme = 'default';
 
-        const THEMES = {
-            'default': { name: 'Неон (Стандарт)', color: '#ff0055', bg1: '#1a0b0b', bg2: '#000000', cost: 0 },
-            'cyber': { name: 'Кибер (500 уд.)', color: '#00ccff', bg1: '#0b1a1a', bg2: '#000000', cost: 500 },
-            'toxic': { name: 'Токсик (1к уд.)', color: '#00ff88', bg1: '#0b1a0b', bg2: '#000000', cost: 1000 },
-            'gold': { name: 'ЭЛИТА (5к уд.)', color: '#FFD700', bg1: '#1a1500', bg2: '#000000', cost: 5000 }
-        };
-
-        window.onload = function() {
-            if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
-           
+        // --- ИНИЦИАЛИЗАЦИЯ ---
+        window.onload = () => {
+            if(window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.expand();
+            
+            // Загрузка сохраненных данных
             const savedSens = localStorage.getItem('box_sens');
-            if(savedSens) updateSens(savedSens); else updateSens(8);
+            if(savedSens) sensitivity = parseInt(savedSens);
+            updateSensUI(sensitivity);
 
-            totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
-            document.getElementById('totalHitsLogin').innerText = totalHits.toLocaleString();
-            personalBest = parseInt(localStorage.getItem('box_pb_sprint')) || 0;
-           
-            if(localStorage.getItem('box_sound') === 'false') toggleOption('sound');
-           
-            const savedTheme = localStorage.getItem('box_theme');
-            if(savedTheme && THEMES[savedTheme]) applyTheme(savedTheme);
+            personalBest = parseInt(localStorage.getItem('box_pb')) || 0;
 
-            if (localStorage.getItem('box_auth') === 'true') {
-                switchScreen('game');
-                showToast(); 
-            }
+            if(localStorage.getItem('box_auth') === 'true') switchScreen('game');
         };
-       
-        function showToast() {
-            const t = document.getElementById('toast');
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 4000);
-        }
 
-        // --- УПРАВЛЕНИЕ ЭКРАНАМИ И МЕНЮ ---
-        function switchScreen(screenName) {
-            // Скрываем все экраны
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('bottomMenu').style.display = 'flex'; // Показываем меню
-
-            // Сбрасываем активную кнопку меню
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-
-            if (screenName === 'game') {
-                document.getElementById('screen-game').classList.add('active');
-                document.getElementById('navGame').classList.add('active-nav');
-            } 
-            else if (screenName === 'skins') {
-                openSkins(); // Обновляем список перед показом
-                document.getElementById('screen-skins').classList.add('active');
-                document.getElementById('navSkins').classList.add('active-nav');
-            }
-            else if (screenName === 'leaders') {
-                showLeaderboard(false, currentMode);
-                document.getElementById('screen-leaders').classList.add('active');
-                document.getElementById('navLeaders').classList.add('active-nav');
-            }
-            else if (screenName === 'settings') {
-                document.getElementById('screen-settings').classList.add('active');
-                document.getElementById('navSettings').classList.add('active-nav');
-            }
-        }
-
-        // --- АВТО-КАЛИБРОВКА ---
-        async function startAutoCalibration() {
-            document.getElementById('calibModal').style.display = 'flex';
-           
+        // --- АУДИО ДВИЖОК (ГЛАВНАЯ ЧАСТЬ) ---
+        async function initAudio() {
             try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
-               
+                // 1. Создаем контекст
+                if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') await audioContext.resume();
+
+                // 2. Настройки для Android (отключаем шумодав)
                 const constraints = {
                     audio: {
                         echoCancellation: false, noiseSuppression: false, autoGainControl: false,
@@ -428,443 +228,292 @@
                         latency: 0
                     }
                 };
-               
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-               
-                const mic = audioCtx.createMediaStreamSource(stream); 
-                const preGain = audioCtx.createGain(); preGain.gain.value = 3.0; // Усиление для калибровки
-                const analyser = audioCtx.createAnalyser(); 
-                const script = audioCtx.createScriptProcessor(2048, 1, 1);
-               
-                const filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.value = 600; // Новая частота для калибровки
 
-                mic.connect(preGain);
-                preGain.connect(filter);
-                filter.connect(analyser);
-                analyser.connect(script);
-               
-                const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
-                script.connect(zeroGain); zeroGain.connect(audioCtx.destination);
-               
-                let calibrationSamples = [];
-                let timeLeft = 30;
-               
-                const countInt = setInterval(() => {
-                    timeLeft--;
-                    document.getElementById('calibTimer').innerText = timeLeft;
-                    document.getElementById('calibBar').style.width = ((30 - timeLeft) / 30 * 100) + "%";
-                    if(timeLeft <= 0) clearInterval(countInt);
-                }, 1000);
+                // 3. Получаем поток
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const source = audioContext.createMediaStreamSource(mediaStream);
 
-                script.onaudioprocess = function() {
-                    const buf = new Uint8Array(analyser.frequencyBinCount);
-                    analyser.getByteTimeDomainData(buf);
-                    let sum = 0;
-                    for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
-                    let rms = Math.sqrt(sum / buf.length);
-                    calibrationSamples.push(Math.floor(rms));
-                };
+                // 4. Цепочка обработки:
+                // Source -> HighPass (убрать гул) -> Gain (усилить) -> LowPass (убрать писк) -> Analyser
+                
+                const highPass = audioContext.createBiquadFilter();
+                highPass.type = 'highpass'; highPass.frequency.value = 50; // Убираем постоянный гул
 
-                setTimeout(() => {
-                    script.disconnect(); mic.disconnect(); filter.disconnect(); analyser.disconnect(); zeroGain.disconnect();
-                    if (calibrationSamples.length > 0) {
-                        let sumAll = calibrationSamples.reduce((a, b) => a + b, 0);
-                        let avgLevel = sumAll / calibrationSamples.length;
-                        calibrationSamples.sort((a, b) => a - b);
-                        let peakLevel = calibrationSamples[Math.floor(calibrationSamples.length * 0.9)]; 
-                        let newSens = avgLevel + (peakLevel - avgLevel) * 0.4;
-                        if(newSens < 3) newSens = 3; if(newSens > 60) newSens = 60;
-                        let finalSens = Math.floor(newSens);
-                        updateSens(finalSens);
-                        alert(`Готово!\nПорог: ${finalSens}`);
-                    }
-                    document.getElementById('calibModal').style.display = 'none';
-                    switchScreen('settings');
-                }, 30000); 
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 4.0; // Усиливаем в 4 раза (для тихих микрофонов)
+
+                const lowPass = audioContext.createBiquadFilter();
+                lowPass.type = 'lowpass'; lowPass.frequency.value = 800; // Ловим щелчок удара
+
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 512;
+
+                // Соединяем
+                source.connect(highPass);
+                highPass.connect(gainNode);
+                gainNode.connect(lowPass);
+                lowPass.connect(analyser);
+
+                // Процессор для анализа данных
+                scriptProcessor = audioContext.createScriptProcessor(1024, 1, 1);
+                analyser.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
+
+                // ЛОГИКА ОБРАБОТКИ В РЕАЛЬНОМ ВРЕМЕНИ
+                scriptProcessor.onaudioprocess = processAudio;
+                
+                return true;
+
             } catch (e) {
-                alert("Ошибка: Разрешите микрофон!");
-                document.getElementById('calibModal').style.display = 'none';
+                alert("Ошибка микрофона: " + e.message);
+                return false;
             }
         }
 
-        function openSkins() {
-            const grid = document.getElementById('skinsGrid');
-            grid.innerHTML = '';
-            for (const [key, theme] of Object.entries(THEMES)) {
-                const locked = totalHits < theme.cost;
-                const active = currentTheme === key ? 'active-skin' : '';
-                const lockIcon = locked ? '<div class="lock-icon">🔒</div>' : '';
-                const opacity = locked ? '0.5' : '1';
-                grid.innerHTML += `
-                <div class="skin-card ${active}" style="opacity:${opacity}" onclick="selectTheme('${key}', ${theme.cost})">
-                    <div class="skin-color" style="background:${theme.color}"></div>
-                    <div class="skin-name">${theme.name}</div>
-                    ${lockIcon}
-                </div>`;
-            }
-        }
+        function processAudio() {
+            if (!isGameRunning && !isCalibrating) return;
 
-        function selectTheme(key, cost) {
-            if (totalHits < cost) {
-                alert(`Нужно набрать ${cost} ударов! У тебя пока ${totalHits}.`);
+            const array = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteTimeDomainData(array);
+
+            let sum = 0;
+            for (let i = 0; i < array.length; i++) {
+                let x = array[i] - 128;
+                sum += x * x;
+            }
+            let rms = Math.sqrt(sum / array.length); // Громкость (0-128 примерно)
+            let val = Math.floor(rms);
+
+            // Визуализация
+            const meter = isCalibrating ? document.getElementById('calibBarVisual') : document.getElementById('gameMicLevel');
+            if(meter) meter.style.width = Math.min(val * 2, 100) + "%";
+            
+            if(isCalibrating) {
+                calibrationData.push(val);
                 return;
             }
-            applyTheme(key);
-            openSkins(); // Обновить UI
-        }
 
-        function applyTheme(key) {
-            currentTheme = key;
-            localStorage.setItem('box_theme', key);
-            const t = THEMES[key];
-            const root = document.documentElement;
-            root.style.setProperty('--primary', t.color);
-            root.style.setProperty('--bg-grad-start', t.bg1);
-            root.style.setProperty('--bg-grad-end', t.bg2);
-        }
-
-        function toggleOption(opt) {
-            const el = document.getElementById('togSound');
-            const isOn = el.classList.contains('on');
-            if(isOn) {
-                el.classList.remove('on'); isSoundOn = false;
-            } else {
-                el.classList.add('on'); isSoundOn = true;
-            }
-            localStorage.setItem('box_sound', !isOn);
-        }
-       
-        function checkCode() { 
-            const val = document.getElementById('passInput').value.trim();
-            if(VALID_CODES.includes(val)) { 
-                localStorage.setItem('box_auth', 'true'); 
-                document.getElementById('screen-login').classList.remove('active');
-                switchScreen('game'); 
-                showToast(); 
-            } 
-            else { document.getElementById('errorMsg').style.display = 'block'; }
-        }
-       
-        function logout() { localStorage.removeItem('box_auth'); location.reload(); }
-       
-        function checkSavedName() {
-            const savedName = localStorage.getItem('box_username');
-            if(savedName) {
-                document.getElementById('nameInputArea').style.display = 'none';
-                document.getElementById('nameDisplayArea').style.display = 'block';
-                document.getElementById('displayName').innerText = savedName;
-            } else {
-                document.getElementById('nameInputArea').style.display = 'block';
-                document.getElementById('nameDisplayArea').style.display = 'none';
-            }
-        }
-       
-        function editName() {
-            document.getElementById('nameInputArea').style.display = 'block';
-            document.getElementById('nameDisplayArea').style.display = 'none';
-        }
-       
-        function toggleSaveBtn() { document.getElementById('saveBtn').disabled = !document.getElementById('legalCheck').checked; }
-        function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
-       
-        function updateSens(val) { 
-            SENSITIVITY = parseInt(val); 
-            document.getElementById('sensVal').innerText = SENSITIVITY; 
-            document.getElementById('sensRange').value = SENSITIVITY;
-            const percent = Math.min(SENSITIVITY * 2, 100); 
-            document.getElementById('micThresh').style.left = percent + "%";
-            localStorage.setItem('box_sens', SENSITIVITY); 
-        }
-       
-        function setRecommended() { updateSens(8); } 
-        function openReviewLink(url) { 
-            window.Telegram.WebApp.openLink(url); 
-            document.getElementById('reviewModal').style.display = 'none'; 
-        }
-       
-        function speak(text) { 
-            if (!isSoundOn || synth.speaking) return; 
-            const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; u.rate = 1.2; synth.speak(u); 
-        }
-
-        function setMode(mode) {
-            if(isRunning) return;
-            currentMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(b => b.className = 'mode-btn');
-           
-            if(mode === 'sprint') {
-                document.getElementById('btnSprint').className += ' active-mode';
-                document.getElementById('timer').innerText = "60";
-                document.getElementById('modeHint').innerText = "НАБЕЙ МАКСИМУМ ЗА 60 СЕК";
-                document.getElementById('timer').style.color = "#fff";
-            } else if (mode === 'survival') {
-                document.getElementById('btnSurvival').className += ' active-mode';
-                document.getElementById('timer').innerText = "10";
-                document.getElementById('modeHint').innerText = "УСКОРЯЙСЯ, ЧТОБЫ ВЫЖИТЬ!";
-                document.getElementById('timer').style.color = "#ffcc00";
-            } else if (mode === 'rhythm') {
-                document.getElementById('btnRhythm').className += ' active-mode';
-                document.getElementById('timer').innerText = "60";
-                document.getElementById('modeHint').innerText = "БЕЙ В ТАКТ МЕТРОНОМА";
-                document.getElementById('timer').style.color = "#00ff88";
+            // --- ДЕТЕКТОР УДАРА ---
+            // Используем порог чувствительности
+            if (val > sensitivity) {
+                let now = Date.now();
+                if (now - lastHitTime > 120) { // Задержка 120мс между ударами
+                    registerHit();
+                    lastHitTime = now;
+                }
             }
         }
 
-        function playSound(type) {
-            if (!isSoundOn) return;
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-           
-            if (type === 'hit') {
-                osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
-                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime+0.1);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
-                osc.start(); osc.stop(audioCtx.currentTime+0.1);
-            } else if (type === 'tick') {
-                osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.05);
-                osc.type = 'square'; osc.start(); osc.stop(audioCtx.currentTime+0.05);
-            } else if (type === 'end') {
-                osc.frequency.value = 200; gain.gain.setValueAtTime(0.5, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1.5);
-                osc.start(); osc.stop(audioCtx.currentTime+1.5);
+        function stopAudio() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            if (scriptProcessor) {
+                scriptProcessor.disconnect();
+                scriptProcessor = null;
             }
         }
 
-        function launchConfetti() {
-            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
-            for(let i=0; i<30; i++) {
-                const c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = Math.random()*100 + 'vw';
-                c.style.background = colors[Math.floor(Math.random()*colors.length)];
-                c.style.animationDuration = (Math.random()*2+2) + 's';
-                document.body.appendChild(c);
-                setTimeout(()=>c.remove(), 4000);
+        // --- ИГРОВАЯ ЛОГИКА ---
+        async function startGame() {
+            // Wake Lock (чтобы экран не гас)
+            if ('wakeLock' in navigator) {
+                try { await navigator.wakeLock.request('screen'); } catch(e) {}
             }
-        }
 
-        const startBtn = document.getElementById('startBtn');
-        startBtn.addEventListener('click', async () => {
-            if(isRunning) return;
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
-               
-                // --- ИСПРАВЛЕНИЕ ДЛЯ ANDROID WEBVIEW ---
-                const constraints = {
-                    audio: {
-                        echoCancellation: false,
-                        noiseSuppression: false,
-                        autoGainControl: false,
-                        googEchoCancellation: false,
-                        googAutoGainControl: false,
-                        googNoiseSuppression: false,
-                        googHighpassFilter: false, // Важно: не резать басы
-                        latency: 0
-                    }
-                };
-               
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-               
-                // ЦЕПОЧКА: MIC -> PRE-GAIN -> FILTER -> ANALYSER
-                const mic = audioCtx.createMediaStreamSource(stream); 
+            const inited = await initAudio();
+            if(!inited) return;
+
+            // UI
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('bottomMenu').style.display = 'none';
+            document.getElementById('scoreDisplay').classList.remove('pulse');
+            
+            score = 0;
+            document.getElementById('scoreDisplay').innerText = "0";
+            timeLeft = (gameMode === 'survival') ? 10 : 60;
+            
+            isGameRunning = true;
+            
+            // Таймер
+            timerInterval = setInterval(() => {
+                if (gameMode === 'sprint') {
+                    timeLeft--;
+                } else {
+                    timeLeft -= 1; // В выживании таймер идет вниз, удары добавляют время
+                }
                 
-                // 1. Усиление (для тихих микрофонов)
-                const preGain = audioCtx.createGain();
-                preGain.gain.value = 3.0; 
-
-                // 2. Фильтр (600Hz, чтобы поймать щелчок)
-                const filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.value = 600; 
-               
-                const analyser = audioCtx.createAnalyser(); 
-                analyser.fftSize = 512; 
-               
-                const script = audioCtx.createScriptProcessor(1024, 1, 1);
-                const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
-               
-                // Соединяем
-                mic.connect(preGain);
-                preGain.connect(filter);
-                filter.connect(analyser);
-                analyser.connect(script);
-                script.connect(zeroGain);
-                zeroGain.connect(audioCtx.destination);
-               
-                // UI: Скрываем кнопку, показываем счет
-                startBtn.style.display = 'none'; 
-                document.querySelector('.mode-selector').style.opacity = '0.3';
-                document.getElementById('bottomMenu').style.display = 'none'; // Скрываем меню во время игры
-                document.getElementById('scoreDisplay').classList.remove('pulse'); // Стоп пульсация
-
-                isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
-                timeLeft = (currentMode === 'survival') ? 10 : 60;
-                document.getElementById('timer').innerText = timeLeft;
-
-                if (timerInterval) clearInterval(timerInterval);
-                if (metronomeInterval) clearInterval(metronomeInterval);
-
-                if(currentMode === 'rhythm') {
-                    playSound('tick');
-                    metronomeInterval = setInterval(() => { if(isRunning) playSound('tick'); }, 600);
-                }
-
-                timerInterval = setInterval(() => { 
-                    timeLeft -= 1; document.getElementById('timer').innerText = Math.floor(timeLeft); 
-                    if(timeLeft <= 0) { 
-                        clearInterval(timerInterval); if(metronomeInterval) clearInterval(metronomeInterval);
-                        isRunning = false; finishGame(); 
-                    } 
-                }, 1000);
-
-                script.onaudioprocess = function() {
-                    if(!isRunning) return;
-                   
-                    const buf = new Uint8Array(analyser.frequencyBinCount);
-                    analyser.getByteTimeDomainData(buf);
-                   
-                    let sum = 0;
-                    for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
-                    let rms = Math.sqrt(sum / buf.length);
-                    let val = Math.floor(rms); 
-
-                    // ВИЗУАЛИЗАЦИЯ
-                    const visual = Math.min(val * 2, 100);
-                    document.getElementById('micLevel').style.width = visual + "%";
-                    document.getElementById('lastHitVal').innerText = val;
-
-                    if (val > SENSITIVITY) {
-                        const now = Date.now();
-                        if(now - lastHitTime > MIN_HIT_DELAY) {
-                            score++; 
-                            registerHitVisual();
-                            lastHitTime = now;
-                        }
-                    }
-                }
-            } catch(e) { alert("Ошибка: Разрешите микрофон!"); }
-        });
-
-        function registerHitVisual() {
-            const el = document.getElementById('scoreDisplay'); el.innerText = score; 
-            el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 300);
-
-            if (currentMode === 'survival') {
-                el.classList.add('hit-survival');
-                let bonus = 1.0; if (score > 20) bonus = 0.5; if (score > 50) bonus = 0.25;
-                timeLeft += bonus; if (timeLeft > 10) timeLeft = 10;
                 document.getElementById('timer').innerText = Math.floor(timeLeft);
-            } else { 
-                el.classList.add('hit'); 
-            }
-           
-            setTimeout(()=>el.className = 'score-circle', 100); // Убираем класс hit, возвращаем дефолт (без пульсации)
-            playSound('hit'); 
+
+                if (timeLeft <= 0) finishGame();
+            }, 1000);
         }
 
-        function finishGame() { 
-            isRunning = false; playSound('end'); launchConfetti();
+        function registerHit() {
+            score++;
+            const el = document.getElementById('scoreDisplay');
+            el.innerText = score;
             
-            // Возвращаем пульсацию
-            document.getElementById('scoreDisplay').classList.add('pulse');
-           
-            const cals = Math.floor(score * 0.05); 
-            let rank = "НОВИЧОК";
-            if(score > 30) rank = "ЛЮБИТЕЛЬ";
-            if(score > 60) rank = "БОЕЦ";
-            if(score > 100) rank = "МАШИНА";
-            if(score > 150) rank = "ЛЕГЕНДА";
+            // Анимация удара
+            el.classList.add('hit');
+            el.classList.add('shake');
+            setTimeout(() => {
+                el.classList.remove('hit');
+                el.classList.remove('shake');
+            }, 100);
 
-            totalHits += score;
-            localStorage.setItem('box_total_hits', totalHits);
+            // Логика выживания
+            if (gameMode === 'survival') {
+                timeLeft += 0.5; // +0.5 сек за удар
+                if(timeLeft > 10) timeLeft = 10;
+                document.getElementById('timer').innerText = Math.floor(timeLeft);
+            }
+        }
 
-            document.getElementById('finalScore').innerText = score; 
-            document.getElementById('resCalories').innerText = cals;
-            document.getElementById('resMode').innerText = currentMode.toUpperCase();
-            document.getElementById('rankDisplay').innerText = rank;
-           
-            personalBest = parseInt(localStorage.getItem('box_pb_' + currentMode)) || 0;
+        function finishGame() {
+            isGameRunning = false;
+            clearInterval(timerInterval);
+            stopAudio(); // 🛑 ВАЖНО: Выключаем микрофон
+
+            // Проверка рекорда и Триггер Радости
             if (score > personalBest && score > 10) {
-                localStorage.setItem('box_pb_' + currentMode, score);
-                document.getElementById('recordMsg').innerText = "🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД!";
-                document.getElementById('reviewModal').style.display = 'flex';
+                localStorage.setItem('box_pb', score);
+                personalBest = score;
+                document.getElementById('newRecordBadge').innerText = "🔥 НОВЫЙ РЕКОРД!";
+                // Показываем окно отзыва!
+                setTimeout(() => { document.getElementById('reviewModal').style.display = 'flex'; }, 500);
             } else {
-                document.getElementById('recordMsg').innerText = "";
+                document.getElementById('newRecordBadge').innerText = "";
             }
 
-            document.querySelector('.mode-selector').style.opacity = '1';
-            document.getElementById('legalCheck').checked = false;
-            document.getElementById('startBtn').style.display = 'block'; // Вернуть кнопку старта для следующего раза
-           
-            checkSavedName(); 
-            toggleSaveBtn(); 
+            document.getElementById('finalScore').innerText = score;
+            switchScreen('save');
             
-            // Показываем экран сохранения, меню там тоже есть
-            document.getElementById('screen-game').classList.remove('active');
-            document.getElementById('screen-save').classList.add('active');
-            document.getElementById('bottomMenu').style.display = 'flex';
+            // Возвращаем UI
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('scoreDisplay').classList.add('pulse');
         }
-       
-        function saveScore() {
-            let name = "";
-            const savedName = localStorage.getItem('box_username');
-           
-            if (savedName && document.getElementById('nameDisplayArea').style.display !== 'none') {
-                name = savedName;
-            } else {
-                name = document.getElementById('nicknameInput').value.trim();
-                if(name.length < 2) { alert("Введите имя!"); return; }
-                localStorage.setItem('box_username', name); 
+
+        // --- КАЛИБРОВКА (ОБНОВЛЕННАЯ) ---
+        let isCalibrating = false;
+        let calibrationData = [];
+
+        async function startCalibration() {
+            document.getElementById('calibModal').style.display = 'flex';
+            calibrationData = [];
+            
+            const inited = await initAudio(); // Используем ТОТ ЖЕ движок
+            if(!inited) return;
+
+            isCalibrating = true;
+            let calTime = 15;
+            
+            const calInt = setInterval(() => {
+                calTime--;
+                document.getElementById('calibTimer').innerText = calTime;
+                if(calTime <= 0) {
+                    clearInterval(calInt);
+                    finishCalibration();
+                }
+            }, 1000);
+        }
+
+        function finishCalibration() {
+            isCalibrating = false;
+            stopAudio();
+            document.getElementById('calibModal').style.display = 'none';
+
+            if (calibrationData.length === 0) return;
+
+            // Считаем среднее и пики
+            // Отсеиваем тишину (все что < 3)
+            const loudSamples = calibrationData.filter(v => v > 3);
+            if (loudSamples.length < 10) {
+                alert("Было слишком тихо! Попробуй бить сильнее.");
+                return;
             }
 
-            const btn = document.querySelector('#screen-save button');
-            btn.innerText = "ОТПРАВКА..."; btn.disabled = true;
-            fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ name: name, score: score, mode: currentMode, date: new Date().toLocaleDateString() }) })
-            .then(() => {
-                // После сохранения идем в лидерборд
-                switchScreen('leaders');
-                btn.innerText = "СОХРАНИТЬ В ТОП"; btn.disabled = false;
-            })
-            .catch(() => switchScreen('leaders'));
+            // Находим средний удар
+            loudSamples.sort((a,b) => a-b);
+            const p60 = loudSamples[Math.floor(loudSamples.length * 0.6)]; // Берем 60-й перцентиль (чуть выше среднего)
+            
+            // Устанавливаем чувствительность чуть ниже средних ударов
+            let newSens = Math.floor(p60 * 0.8);
+            if(newSens < 5) newSens = 5;
+            
+            updateSensUI(newSens);
+            alert("Готово! Чувствительность настроена на: " + newSens);
         }
 
-        function switchLeaderTab(mode) {
-            document.querySelectorAll('.leader-tab').forEach(t => t.className = 'leader-tab');
-            document.getElementById('tab' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active-tab');
-            fetchLeaderboardData(mode);
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+        function updateSens(val) {
+            sensitivity = parseInt(val);
+            updateSensUI(sensitivity);
+            localStorage.setItem('box_sens', sensitivity);
         }
 
-        function showLeaderboard(fromMenu = false, initialMode = 'sprint') {
-            // Эта функция теперь просто обновляет данные, переключение экранов через switchScreen
-            switchLeaderTab(initialMode);
+        function updateSensUI(val) {
+            document.getElementById('sensRange').value = val;
+            document.getElementById('sensValDisplay').innerText = val;
+            document.getElementById('debugSens').innerText = val;
+            document.getElementById('gameMicThresh').style.left = Math.min(val*2, 100) + "%";
         }
 
-        function fetchLeaderboardData(mode) {
-            const list = document.getElementById('leaderList'); 
-            list.innerHTML = "<div style='padding:20px'>Загрузка...</div>";
-            fetch(GOOGLE_SCRIPT_URL + "?mode=" + mode)
-            .then(r=>r.json())
+        function switchScreen(name) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            
+            // Меню видно везде кроме логина и игры
+            const menu = document.getElementById('bottomMenu');
+            menu.style.display = (name === 'login' || name === 'game') ? 'none' : 'flex';
+            
+            // Подсветка кнопок меню
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+            const map = { 'game': 'navGame', 'skins': 'navSkins', 'leaders': 'navLeaders', 'settings': 'navSettings' };
+            if(map[name]) document.getElementById(map[name]).classList.add('active-nav');
+
+            document.getElementById('screen-' + name).classList.add('active');
+            
+            if(name === 'leaders') loadLeaders();
+        }
+
+        function checkCode() {
+            const val = document.getElementById('passInput').value;
+            if(VALID_CODES.includes(val)) {
+                localStorage.setItem('box_auth', 'true');
+                switchScreen('game');
+            } else {
+                document.getElementById('errorMsg').style.display = 'block';
+            }
+        }
+        
+        function logout() { localStorage.removeItem('box_auth'); location.reload(); }
+        function setMode(m) { gameMode = m; document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active-mode')); event.target.classList.add('active-mode'); }
+        
+        // Лидерборд
+        function saveScore() {
+            const name = document.getElementById('nickInput').value || "Аноним";
+            fetch(GOOGLE_SCRIPT_URL, { 
+                method: "POST", mode: "no-cors", 
+                body: JSON.stringify({ name: name, score: score, mode: gameMode }) 
+            }).then(() => switchScreen('leaders'));
+        }
+        
+        function loadLeaders() {
+            const list = document.getElementById('leaderList');
+            list.innerHTML = "Загрузка...";
+            fetch(GOOGLE_SCRIPT_URL + "?mode=" + gameMode)
+            .then(r => r.json())
             .then(data => {
                 list.innerHTML = "";
-                if(!data.length) list.innerHTML = "<div style='padding:20px'>Пока пусто</div>";
-                data.forEach((row, i) => {
-                    let dateStr = row.date ? row.date : ''; 
-                    list.innerHTML += `
-                    <div class="leader-row">
-                        <div class="leader-left">
-                            <span class="leader-name">#${i+1} ${row.name}</span>
-                            <span class="leader-date">${dateStr}</span>
-                        </div>
-                        <span class="leader-score">${row.score}</span>
-                    </div>`;
+                data.forEach((r, i) => {
+                    list.innerHTML += `<div class="leader-row"><span>#${i+1} ${r.name}</span><b>${r.score}</b></div>`;
                 });
             });
         }
+        
+        // Старт по кнопке
+        document.getElementById('startBtn').addEventListener('click', startGame);
     </script>
 </body>
 </html>
