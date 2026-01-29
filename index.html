@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall V8: NO ECHO</title>
+    <title>BoxBall V9: BLIND SPOT</title>
     
     <script>
         const GOOGLE_SCRIPT_URL = ""; 
@@ -184,9 +184,9 @@
     </div>
 
     <div id="calibModal" class="calibration-overlay">
-        <h2 style="color:white; margin-bottom:5px;">🤫 КАЛИБРОВКА</h2>
+        <h2 style="color:white; margin-bottom:5px;">🤫 ТИШИНА</h2>
         <p style="color:#aaa; max-width:80%; font-size:14px; margin-bottom:20px;">
-            Просто помолчи 5 секунд.<br>Мы замерим шум комнаты.
+            Просто помолчи 5 секунд.<br>Мы настроим ноль.
         </p>
         <div class="calib-circle" id="calibTimer">5</div>
         <div class="calib-progress"><div class="calib-bar" id="calibBar"></div></div>
@@ -210,7 +210,7 @@
 
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">V8: ANTI-FEEDBACK</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">V9: BLIND SPOT</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -224,7 +224,7 @@
         <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433, 0309 или 5528</p>
         
         <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
-            © 2026 BOXBALL RUSSIA. V8
+            © 2026 BOXBALL RUSSIA. V9
         </div>
     </div>
 
@@ -239,7 +239,7 @@
             <div style="background:rgba(255,255,255,0.1); padding:8px 25px; border-radius:20px; font-weight:bold; color:#fff; font-size: 42px; min-width: 110px;" id="timer">60</div>
         </div>
         
-        <div class="shield-icon">🛡️ NO-ECHO SYSTEM</div>
+        <div class="shield-icon">🛡️ SOFTWARE MUTE</div>
         
         <div class="score-circle pulse" id="scoreDisplay">0</div>
         
@@ -252,7 +252,7 @@
             <span>LEVEL: <span id="debugVol" style="color:#fff; font-size:24px;">0</span></span>
         </div>
         
-        <div style="color:#666; font-size:10px; margin-top:5px; margin-bottom:10px;" id="modeHint">ЕСЛИ НЕ СЛЫШИТ: ПРИБАВЬ ЧУВСТВИТЕЛЬНОСТЬ</div>
+        <div style="color:#666; font-size:10px; margin-top:5px; margin-bottom:10px;" id="modeHint">ЕСЛИ НЕ СЛЫШИТ: СТАВЬ ПОРОГ НА 1-3</div>
 
         <button id="startBtn">НАЧАТЬ РАУНД</button>
     </div>
@@ -274,12 +274,13 @@
 
             <hr style="border:0; border-top:1px solid #444; margin: 15px 0; width:100%;">
 
-            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА (5 сек)</button>
+            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА ТИШИНЫ (5 сек)</button>
             
-            <label style="font-size:12px; color:#ccc;">Порог (Ниже = Чувствительнее): <span id="sensVal">15</span></label>
-            <input type="range" id="sensRange" min="2" max="60" value="15" oninput="updateSens(this.value)">
+            <label style="font-size:12px; color:#ccc;">Порог (1-20): <span id="sensVal">3</span></label>
+            <input type="range" id="sensRange" min="1" max="20" value="3" oninput="updateSens(this.value)">
+            <p style="font-size:10px; color:#666; margin-top:-5px;">1 = очень чувствительно, 20 = глухо</p>
             
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 15px;">Сброс на 15</button>
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 15px;">Сброс на 3</button>
             
             <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; margin-bottom: 5px;">🚪 Выйти из аккаунта</button>
         </div>
@@ -325,10 +326,12 @@
     </div>
 
     <script>
-        let MIN_HIT_DELAY = 130; 
-        let SENSITIVITY = 15;
+        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
+        let SENSITIVITY = 3; 
         
         let score = 0, isRunning = false, lastHitTime = 0;
+        let ignoreAudioUntil = 0; // ВРЕМЯ "СЛЕПОТЫ"
+        
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
         let audioCtx;
@@ -380,7 +383,7 @@
             if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
             
             const savedSens = localStorage.getItem('box_sens');
-            if(savedSens) updateSens(savedSens); else updateSens(15);
+            if(savedSens) updateSens(savedSens); else updateSens(3); // По умолчанию 3
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
             document.getElementById('totalHitsLogin').innerText = totalHits.toLocaleString();
@@ -438,12 +441,7 @@
                 if (audioCtx.state === 'suspended') await audioCtx.resume();
                 
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: false, 
-                        noiseSuppression: false, 
-                        autoGainControl: false,
-                        latency: 0
-                    }
+                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 }
                 });
                 
                 const mic = audioCtx.createMediaStreamSource(stream); 
@@ -451,7 +449,7 @@
                 const analyser = audioCtx.createAnalyser(); 
                 const script = audioCtx.createScriptProcessor(2048, 1, 1);
                 
-                // === ФИЛЬТР BANDPASS (400-900 Hz) ===
+                // Фильтр как в игре
                 const filter = audioCtx.createBiquadFilter();
                 filter.type = 'bandpass';
                 filter.frequency.value = 600; 
@@ -487,20 +485,20 @@
                 setTimeout(() => {
                     script.disconnect(); mic.disconnect(); filter.disconnect(); analyser.disconnect(); zeroGain.disconnect();
                     
-                    let avgNoise = 2; 
+                    let avgNoise = 1; 
                     if (noiseSamples.length > 0) {
                         let sumNoise = noiseSamples.reduce((a, b) => a + b, 0);
                         avgNoise = sumNoise / noiseSamples.length;
                     }
                     
-                    let newSens = avgNoise + 8;
-                    if(newSens < 5) newSens = 5; 
-                    if(newSens > 50) newSens = 50; 
+                    // ЕСЛИ ШУМ = 1, СТАВИМ ПОРОГ = 3.
+                    // МЫ ПРОСТО ЧУТЬ ПОДНИМАЕМСЯ НАД ШУМОМ.
+                    let newSens = Math.floor(avgNoise + 2);
+                    if(newSens < 2) newSens = 2; 
                     
-                    let finalSens = Math.floor(newSens);
-                    updateSens(finalSens);
+                    updateSens(newSens);
                     
-                    alert(`Шум комнаты: ${Math.floor(avgNoise)}\nПорог установлен: ${finalSens}`);
+                    alert(`Шум в комнате: ${Math.floor(avgNoise)}\nПорог установлен: ${newSens}`);
                     
                     document.getElementById('calibModal').style.display = 'none';
                     switchScreen('settings');
@@ -520,12 +518,7 @@
                 if (audioCtx.state === 'suspended') await audioCtx.resume();
                 
                 const constraints = {
-                    audio: {
-                        echoCancellation: false, 
-                        noiseSuppression: false, 
-                        autoGainControl: false,
-                        latency: 0
-                    }
+                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 }
                 };
                 
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -534,7 +527,6 @@
                 const preGain = audioCtx.createGain();
                 preGain.gain.value = 15.0; 
 
-                // === ФИЛЬТР BANDPASS ===
                 const filter = audioCtx.createBiquadFilter();
                 filter.type = 'bandpass';
                 filter.frequency.value = 600; 
@@ -581,6 +573,10 @@
                 script.onaudioprocess = function() {
                     if(!isRunning) return;
                     
+                    // --- BLIND SPOT CHECK (СЛЕПОЕ ПЯТНО) ---
+                    // Если мы недавно издали звук, мы оглохли
+                    if(Date.now() < ignoreAudioUntil) return;
+
                     const buf = new Uint8Array(analyser.frequencyBinCount);
                     analyser.getByteTimeDomainData(buf);
                     
@@ -596,10 +592,16 @@
 
                     if (val > SENSITIVITY) {
                         const now = Date.now();
-                        if(now - lastHitTime > MIN_HIT_DELAY) {
+                        // 150ms задержка, чтобы не считать эхо
+                        if(now - lastHitTime > 150) {
                             score++; 
                             registerHitVisual();
                             lastHitTime = now;
+                            
+                            // ВКЛЮЧАЕМ СЛЕПОЕ ПЯТНО НА 150 МС
+                            // Пока играет звук, микрофон не слушает
+                            ignoreAudioUntil = now + 150; 
+                            
                             return; 
                         }
                     }
@@ -772,7 +774,7 @@
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { updateSens(15); } 
+        function setRecommended() { updateSens(3); } 
         function openReviewLink(url) { 
             window.Telegram.WebApp.openLink(url); 
             document.getElementById('reviewModal').style.display = 'none'; 
@@ -801,7 +803,7 @@
             }
         }
 
-        // --- НОВЫЙ ЗВУКОВОЙ ДВИЖОК: АНТИ-ЭХО ---
+        // --- ЗВУКОВОЙ ДВИЖОК: КОРОТКИЙ ТИК ---
         function playSound(type) {
             if (!isSoundOn) return;
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -811,19 +813,16 @@
             osc.connect(gain); gain.connect(audioCtx.destination);
             
             if (type === 'hit') {
-                // ВЫСОКАЯ ЧАСТОТА (2500-4000 Гц)
-                // Наш фильтр мяча (400-900 Гц) НЕ УСЛЫШИТ ЭТОТ ЗВУК
-                osc.frequency.setValueAtTime(2500, audioCtx.currentTime); 
-                osc.frequency.exponentialRampToValueAtTime(4000, audioCtx.currentTime+0.08);
+                // Короткий "Тик" (50мс)
+                osc.frequency.setValueAtTime(1500, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime+0.05);
                 
-                // Короткий "щелчок"
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.08);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.05);
                 
-                osc.start(); osc.stop(audioCtx.currentTime+0.08);
+                osc.start(); osc.stop(audioCtx.currentTime+0.05);
             } 
             else if (type === 'tick') {
-                // Метроном тоже поднимаем высоко (2500 Гц), чтобы не мешал
                 osc.frequency.setValueAtTime(2500, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.05);
