@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall V9: BLIND SPOT</title>
+    <title>BoxBall Russia</title>
     
     <script>
-        const GOOGLE_SCRIPT_URL = ""; 
-        const POLICY_URL = "https://docs.google.com/document/";
+        const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
+        const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА";
+        
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
         const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";     
-        const VALID_CODES = ["6433", "0309", "5528", "1111"];
+        
+        const VALID_CODES = ["6433", "0309", "5528"];
+        const CHANNEL_URL = "https://t.me/DUROV";
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -20,7 +23,6 @@
             --bg-grad-start: #1a0b0b;
             --bg-grad-end: #000000;
             --text-color: white;
-            --nav-height: 70px;
         }
 
         body {
@@ -29,11 +31,13 @@
             color: var(--text-color); display: flex; flex-direction: column; align-items: center;
             height: 100vh; margin: 0; overflow: hidden; text-align: center;
             user-select: none; -webkit-tap-highlight-color: transparent;
+            transition: background 0.5s;
         }
 
-        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; padding-bottom: calc(var(--nav-height) + 20px); box-sizing: border-box; opacity: 0; transition: opacity 0.3s; }
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.3s; }
         .active { display: flex; opacity: 1; }
 
+        /* ИГРОВОЙ КРУГ */
         .score-circle {
             width: 210px; height: 210px; border-radius: 50%; border: 8px solid #333;
             display: flex; align-items: center; justify-content: center;
@@ -42,6 +46,7 @@
             transition: border-color 0.1s; position: relative; z-index: 2;
         }
         
+        /* Визуализатор громкости */
         .volume-meter {
             width: 240px; height: 16px; background: #222; border-radius: 8px; margin-top: 15px;
             position: relative; overflow: hidden; border: 1px solid #444;
@@ -56,8 +61,7 @@
         }
         
         .last-hit-info {
-            font-size: 16px; color: #fff; margin-top: 8px; font-family: monospace; font-weight: bold; width: 90%;
-            display: flex; justify-content: center;
+            font-size: 12px; color: #aaa; margin-top: 8px; font-family: monospace; font-weight: bold;
         }
         
         @keyframes shake-anim {
@@ -66,15 +70,7 @@
         }
         .shake { animation: shake-anim 0.1s; }
 
-        @keyframes pulse-anim {
-            0% { transform: scale(1); border-color: #333; }
-            50% { transform: scale(1.02); border-color: #444; }
-            100% { transform: scale(1); border-color: #333; }
-        }
-        .pulse { animation: pulse-anim 2s infinite ease-in-out; }
-
-        .hit { border-color: var(--primary) !important; box-shadow: 0 0 50px var(--primary); color: var(--primary); animation: none; }
-        .hit-survival { border-color: #ffcc00 !important; box-shadow: 0 0 50px #ffcc00; color: #ffcc00; animation: none; }
+        .hit { border-color: var(--primary); box-shadow: 0 0 50px var(--primary); color: var(--primary); }
 
         button {
             padding: 16px 0; font-size: 17px; font-weight: 800; background: var(--primary); color: white; border: none; border-radius: 14px;
@@ -83,33 +79,38 @@
         }
         button:active { transform: scale(0.96); }
         button:disabled { background: #444; color: #888; box-shadow: none; cursor: not-allowed; }
+        button.channel-btn { background: #2AABEE; color: white; box-shadow: 0 4px 15px rgba(42, 171, 238, 0.3); }
         button.secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; box-shadow: none; font-size: 14px; margin-top: 15px; padding: 12px; }
 
+        /* ВЫБОР РЕЖИМА */
         .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; width: 95%; max-width: 340px; }
         .mode-btn { flex: 1; padding: 10px 5px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 11px; font-weight: bold; margin: 0; box-shadow: none; }
         .mode-btn.active-mode { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .settings-panel { display: none; width: 100%; flex-direction: column; align-items: center; } 
+        /* НАСТРОЙКИ */
+        .settings-panel { background: rgba(30,30,30,0.95); border: 1px solid #555; padding: 20px; border-radius: 15px; margin-bottom: 20px; width: 85%; max-width: 300px; display: none; z-index: 10; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
         input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); cursor: pointer; }
         
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; color: #ccc; width: 100%; max-width: 280px;}
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; color: #ccc; }
         .toggle-switch { width: 40px; height: 20px; background: #555; border-radius: 10px; position: relative; cursor: pointer; }
         .toggle-switch.on { background: var(--primary); }
         .toggle-knob { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; }
         .toggle-switch.on .toggle-knob { left: 22px; }
 
-        .leaderboard-box { background: rgba(0,0,0,0.3); width: 100%; max-height: 50vh; overflow-y: auto; border-radius: 16px; margin: 15px 0; }
+        /* ЛИДЕРБОРД */
+        .leaderboard-box { background: rgba(0,0,0,0.3); width: 100%; max-height: 35vh; overflow-y: auto; border-radius: 16px; margin: 15px 0; }
         .leader-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .leader-name { font-size: 14px; font-weight: bold; display: block; color: #eee; text-align: left; }
         .leader-date { font-size: 10px; color: #888; display: block; margin-top: 3px; text-align: left; }
         .leader-score { font-size: 18px; font-weight: bold; color: #fff; }
         .leader-row:nth-child(1) .leader-name, .leader-row:nth-child(1) .leader-score { color: var(--accent); }
 
-        .shield-icon { font-size: 10px; color: #00ff88; margin-bottom: 10px; border: 1px solid #00ff88; padding: 4px 8px; border-radius: 20px; align-self: center; margin-top: 10px; }
+        .shield-icon { font-size: 10px; color: #00ff88; margin-bottom: 10px; border: 1px solid #00ff88; padding: 4px 8px; border-radius: 20px; align-self: flex-start; margin-top: 10px; }
         .legal-checkbox-area { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; width: 90%; max-width: 300px; text-align: left; font-size: 11px; color: #aaa; }
         .legal-link { color: var(--primary); text-decoration: underline; cursor: pointer; }
 
-        .skins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; max-width: 320px;}
+        /* МАГАЗИН СКИНОВ */
+        .skins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
         .skin-card { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 10px; padding: 10px; cursor: pointer; position: relative; opacity: 0.5; }
         .skin-card.unlocked { opacity: 1; border-color: #666; }
         .skin-card.active-skin { border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
@@ -117,14 +118,17 @@
         .skin-name { font-size: 12px; font-weight: bold; }
         .lock-icon { font-size: 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; }
 
+        /* ОКНА */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
         .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid var(--primary); text-align: center; width: 85%; max-width: 320px; max-height: 80vh; overflow-y: auto; }
 
+        /* КАЛИБРОВКА */
         .calibration-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .calib-circle { width: 180px; height: 180px; border: 5px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; color: #00ff88; margin-bottom: 20px; background: rgba(0,255,136,0.1); }
         .calib-progress { width: 80%; height: 4px; background: #333; margin-top: 20px; border-radius: 2px; }
         .calib-bar { height: 100%; width: 0%; background: #00ff88; transition: width 1s linear; }
         
+        /* УВЕДОМЛЕНИЕ (ТОСТ) */
         .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff88; z-index: 150; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
         .toast.show { opacity: 1; }
 
@@ -136,64 +140,31 @@
         .confetti { position: absolute; width: 10px; height: 10px; animation: fall linear forwards; z-index: 100; }
         @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
         
+        /* Вкладки лидерборда */
         .leader-tabs { display: flex; width: 100%; margin-bottom: 10px; border-bottom: 1px solid #444; }
         .leader-tab { flex: 1; padding: 10px; font-size: 10px; font-weight: bold; color: #666; cursor: pointer; }
         .leader-tab.active-tab { color: #ff0055; border-bottom: 2px solid #ff0055; }
         .leader-tab.survival-tab.active-tab { color: #ffcc00; border-bottom: 2px solid #ffcc00; }
         .leader-tab.rhythm-tab.active-tab { color: #00ff88; border-bottom: 2px solid #00ff88; }
         
+        /* Профиль */
         .player-profile { width: 80%; text-align: left; margin-bottom: 15px; border: 1px solid #444; border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.05); }
         .player-name-label { font-size: 10px; color: #888; }
         .player-name-val { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
         .edit-link { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; float: right; }
-
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height);
-            background: rgba(20, 20, 20, 0.98); backdrop-filter: blur(10px);
-            border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center;
-            z-index: 1000; padding-bottom: 10px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-        }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center; color: #666; font-size: 9px; font-weight: bold;
-            background: none; border: none; box-shadow: none; padding: 5px; margin: 0; width: auto; max-width: none;
-            cursor: pointer;
-        }
-        .nav-item.active-nav { color: var(--primary); }
-        .nav-icon { font-size: 22px; margin-bottom: 3px; transition: transform 0.2s; }
-        .nav-item:active .nav-icon { transform: scale(0.8); }
-        
-        #iosStartBtn { display:none; background: #00ff88; color: black; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="bottomMenu" class="bottom-nav" style="display:none;">
-        <button class="nav-item active-nav" id="navGame" onclick="switchScreen('game')">
-            <span class="nav-icon">🥊</span>ИГРА
-        </button>
-        <button class="nav-item" id="navSkins" onclick="switchScreen('skins')">
-            <span class="nav-icon">🎒</span>СКИНЫ
-        </button>
-        <button class="nav-item" id="navLeaders" onclick="switchScreen('leaders')">
-            <span class="nav-icon">🏆</span>ТОП
-        </button>
-        <button class="nav-item" id="navSettings" onclick="switchScreen('settings')">
-            <span class="nav-icon">⚙️</span>ОПЦИИ
-        </button>
-    </div>
-
     <div id="calibModal" class="calibration-overlay">
-        <h2 style="color:white; margin-bottom:5px;">🤫 ТИШИНА</h2>
-        <p style="color:#aaa; max-width:80%; font-size:14px; margin-bottom:20px;">
-            Просто помолчи 5 секунд.<br>Мы настроим ноль.
-        </p>
-        <div class="calib-circle" id="calibTimer">5</div>
+        <h2 style="color:white; margin-bottom:5px;">🤫 ТИШИНА...</h2>
+        <p style="color:#aaa; max-width:80%; font-size:14px; margin-bottom:20px;">Не бей по мячу!<br>Мы замеряем фоновый шум комнаты.</p>
+        <div class="calib-circle" id="calibTimer">10</div>
         <div class="calib-progress"><div class="calib-bar" id="calibBar"></div></div>
-        <p style="color:#666; font-size:12px; margin-top:15px;" id="calibStatus">Слушаем...</p>
+        <p style="color:#666; font-size:12px; margin-top:15px;">Анализ Noise Floor (dB)...</p>
     </div>
     
-    <div id="toast" class="toast">📢 Не слышит? Убавь звук на телефоне!</div>
+    <div id="toast" class="toast">📢 Новое место? Сделай калибровку в настройках!</div>
 
     <div id="reviewModal" class="modal-overlay">
         <div class="modal-content">
@@ -208,23 +179,30 @@
         </div>
     </div>
 
+    <div id="skinsModal" class="modal-overlay">
+        <div class="modal-content" style="border-color: #fff;">
+            <h3>🎨 ВЫБЕРИ СТИЛЬ</h3>
+            <p style="font-size:12px; color:#888;">Набивай удары, чтобы открыть новые цвета!</p>
+            <div class="skins-grid" id="skinsGrid"></div>
+            <button onclick="document.getElementById('skinsModal').style.display='none'" style="margin-top:15px; background: #333;">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">V9: BLIND SPOT</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">FILTERED AUDIO (Bandpass + dB)</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
             <div class="career-num" id="totalHitsLogin">0</div>
         </div>
-        
-        <button id="iosStartBtn" onclick="initAudioContextOnly()">🟢 ВКЛЮЧИТЬ МИКРОФОН</button>
 
         <input type="text" id="passInput" placeholder="4 ЦИФРЫ ПОД ШТРИХКОДОМ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:16px; margin-bottom:15px; width:80%;">
         <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
         <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433, 0309 или 5528</p>
         
         <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
-            © 2026 BOXBALL RUSSIA. V9
+            © 2026 BOXBALL RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
         </div>
     </div>
 
@@ -235,55 +213,51 @@
             <button class="mode-btn" id="btnRhythm" onclick="setMode('rhythm')">🎵 РИТМ</button>
         </div>
 
-        <div style="display:flex; justify-content:center; width:100%; align-items: center; margin-bottom: 5px;">
+        <div style="display:flex; justify-content:space-between; width:90%; align-items: center; margin-bottom: 5px;">
             <div style="background:rgba(255,255,255,0.1); padding:8px 25px; border-radius:20px; font-weight:bold; color:#fff; font-size: 42px; min-width: 110px;" id="timer">60</div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <div class="shield-icon" style="margin:0 0 5px 0;">🛡️ dB Logic</div>
+                <div style="font-size:12px; color:#aaa; cursor:pointer; border-bottom:1px dashed #555;" onclick="toggleSettings()">⚙️ Настройки</div>
+            </div>
         </div>
         
-        <div class="shield-icon">🛡️ SOFTWARE MUTE</div>
+        <div class="settings-panel" id="settingsPanel">
+            <h3 style="margin-top:0; font-size:14px; margin-bottom:15px;">НАСТРОЙКИ</h3>
+            
+            <div class="toggle-row">
+                <span>🔊 Звук игры</span>
+                <div class="toggle-switch on" id="togSound" onclick="toggleOption('sound')"><div class="toggle-knob"></div></div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
+
+            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА ШУМА (10с)</button>
+            
+            <label style="font-size:12px; color:#ccc;">Чувствительность (+dB): <span id="sensVal">15</span></label>
+            <input type="range" id="sensRange" min="5" max="40" value="15" oninput="updateSens(this.value)">
+            
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 15dB</button>
+            
+            <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
+            
+            <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; margin-bottom: 5px;">🚪 Выйти</button>
+            <button onclick="toggleSettings()" style="margin-top:5px; padding:10px; font-size:12px; background:#222; border:1px solid #444;">ЗАКРЫТЬ</button>
+        </div>
         
-        <div class="score-circle pulse" id="scoreDisplay">0</div>
+        <div class="score-circle" id="scoreDisplay">0</div>
         
         <div class="volume-meter">
             <div class="volume-bar" id="micLevel"></div>
             <div class="volume-threshold" id="micThresh"></div>
         </div>
-        
         <div class="last-hit-info">
-            <span>LEVEL: <span id="debugVol" style="color:#fff; font-size:24px;">0</span></span>
+            dB: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">-100</span> | ФОН: <span id="noiseFloorVal">-100</span>
         </div>
         
-        <div style="color:#666; font-size:10px; margin-top:5px; margin-bottom:10px;" id="modeHint">ЕСЛИ НЕ СЛЫШИТ: СТАВЬ ПОРОГ НА 1-3</div>
+        <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
 
         <button id="startBtn">НАЧАТЬ РАУНД</button>
-    </div>
-
-    <div id="screen-skins" class="screen">
-        <h3>🎒 РАЗДЕВАЛКА</h3>
-        <p style="font-size:12px; color:#888;">Набивай удары, чтобы открыть стили</p>
-        <div class="skins-grid" id="skinsGrid"></div>
-    </div>
-
-    <div id="screen-settings" class="screen">
-        <h3>⚙️ ОПЦИИ</h3>
-        
-        <div class="settings-panel" style="display:flex;">
-            <div class="toggle-row">
-                <span>🔊 Звук эффектов</span>
-                <div class="toggle-switch on" id="togSound" onclick="toggleOption('sound')"><div class="toggle-knob"></div></div>
-            </div>
-
-            <hr style="border:0; border-top:1px solid #444; margin: 15px 0; width:100%;">
-
-            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА ТИШИНЫ (5 сек)</button>
-            
-            <label style="font-size:12px; color:#ccc;">Порог (1-20): <span id="sensVal">3</span></label>
-            <input type="range" id="sensRange" min="1" max="20" value="3" oninput="updateSens(this.value)">
-            <p style="font-size:10px; color:#666; margin-top:-5px;">1 = очень чувствительно, 20 = глухо</p>
-            
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 15px;">Сброс на 3</button>
-            
-            <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; margin-bottom: 5px;">🚪 Выйти из аккаунта</button>
-        </div>
+        <button onclick="showLeaderboard(true)" class="secondary-btn">🏆 ТАБЛИЦА ЛИДЕРОВ</button>
     </div>
 
     <div id="screen-save" class="screen">
@@ -312,7 +286,6 @@
         </div>
 
         <button id="saveBtn" onclick="saveScore()" disabled>СОХРАНИТЬ В ТОП</button>
-        <button onclick="switchScreen('game')" class="secondary-btn">НЕ СОХРАНЯТЬ</button>
     </div>
 
     <div id="screen-leaders" class="screen">
@@ -323,71 +296,56 @@
             <div class="leader-tab" id="tabRhythm" onclick="switchLeaderTab('rhythm')">🎵 РИТМ</div>
         </div>
         <div class="leaderboard-box" id="leaderList"><div style="padding:20px;">Загрузка...</div></div>
+        <button id="leaderBackBtn" onclick="location.reload()" style="background: #333;">ИГРАТЬ СНОВА</button>
     </div>
 
     <script>
-        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
-        let SENSITIVITY = 3; 
+        // --- 1. CONFIG ---
+        // Было 110мс, стало 250мс для защиты от двойных ударов (Self-trigger)
+        const MIN_HIT_DELAY = 250; 
         
+        // Разница в dB между фоном и ударом, чтобы засчитать удар
+        let SENSITIVITY_DB = 15; 
+        
+        // --- 2. GLOBAL STATE ---
         let score = 0, isRunning = false, lastHitTime = 0;
-        let ignoreAudioUntil = 0; // ВРЕМЯ "СЛЕПОТЫ"
-        
         let currentMode = 'sprint'; 
         let timeLeft = 60.0;
-        let audioCtx;
+        
+        // Audio Objects
+        let audioCtx, analyser;
+        
+        // Logic variables
+        let noiseFloor = -80; // Базовый уровень шума (dB)
+        let audioBlockedUntil = 0; // Время, до которого микрофон "ослеплен" (после звука игры)
+
+        // System
         const synth = window.speechSynthesis;
         let timerInterval;
         let metronomeInterval;
         let totalHits = 0;
         let personalBest = 0;
+        
+        // Settings
         let isSoundOn = true;
         let currentTheme = 'default';
-        
+
+        // THEMES
         const THEMES = {
             'default': { name: 'Неон (Стандарт)', color: '#ff0055', bg1: '#1a0b0b', bg2: '#000000', cost: 0 },
             'cyber': { name: 'Кибер (500 уд.)', color: '#00ccff', bg1: '#0b1a1a', bg2: '#000000', cost: 500 },
             'toxic': { name: 'Токсик (1к уд.)', color: '#00ff88', bg1: '#0b1a0b', bg2: '#000000', cost: 1000 },
             'gold': { name: 'ЭЛИТА (5к уд.)', color: '#FFD700', bg1: '#1a1500', bg2: '#000000', cost: 5000 }
         };
-        
-        if(isIOS()) {
-            document.getElementById('iosStartBtn').style.display = 'block';
-        }
-
-        function isIOS() {
-            return [
-                'iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'
-            ].includes(navigator.platform) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-        }
-
-        async function initAudioContextOnly() {
-            try {
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                if (!audioCtx) audioCtx = new AudioContextClass();
-                await audioCtx.resume();
-                
-                const buffer = audioCtx.createBuffer(1, 1, 22050);
-                const source = audioCtx.createBufferSource();
-                source.buffer = buffer;
-                source.connect(audioCtx.destination);
-                source.start(0);
-                
-                document.getElementById('iosStartBtn').style.display = 'none';
-                alert("Микрофон готов!");
-            } catch(e) {
-                alert("Ошибка аудио: " + e);
-            }
-        }
 
         window.onload = function() {
             if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
             
-            const savedSens = localStorage.getItem('box_sens');
-            if(savedSens) updateSens(savedSens); else updateSens(3); // По умолчанию 3
+            const savedSens = localStorage.getItem('box_sens_db');
+            if(savedSens) updateSens(savedSens); else updateSens(15);
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
             document.getElementById('totalHitsLogin').innerText = totalHits.toLocaleString();
-            personalBest = parseInt(localStorage.getItem('box_pb_sprint')) || 0;
             
             if(localStorage.getItem('box_sound') === 'false') toggleOption('sound');
             
@@ -395,7 +353,7 @@
             if(savedTheme && THEMES[savedTheme]) applyTheme(savedTheme);
 
             if (localStorage.getItem('box_auth') === 'true') {
-                switchScreen('game');
+                showScreen('screen-game');
                 showToast(); 
             }
         };
@@ -406,213 +364,126 @@
             setTimeout(() => t.classList.remove('show'), 4000);
         }
 
-        function switchScreen(screenName) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('bottomMenu').style.display = 'flex'; 
-
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-
-            if (screenName === 'game') {
-                document.getElementById('screen-game').classList.add('active');
-                document.getElementById('navGame').classList.add('active-nav');
-            } 
-            else if (screenName === 'skins') {
-                openSkins(); 
-                document.getElementById('screen-skins').classList.add('active');
-                document.getElementById('navSkins').classList.add('active-nav');
-            }
-            else if (screenName === 'leaders') {
-                showLeaderboard(false, currentMode);
-                document.getElementById('screen-leaders').classList.add('active');
-                document.getElementById('navLeaders').classList.add('active-nav');
-            }
-            else if (screenName === 'settings') {
-                document.getElementById('screen-settings').classList.add('active');
-                document.getElementById('navSettings').classList.add('active-nav');
-            }
+        // --- 3. АУДИО ДВИЖОК (ГЛАВНАЯ ЛОГИКА) ---
+        
+        async function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+            return audioCtx;
         }
 
-        async function startAutoCalibration() {
-            document.getElementById('calibModal').style.display = 'flex';
-            document.getElementById('calibStatus').innerText = "Замеряем шум комнаты...";
+        async function startListening() {
             try {
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                if (!audioCtx) audioCtx = new AudioContextClass();
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                await initAudio();
                 
+                // Настройки микрофона: выключаем все улучшайзеры, нужен сырой сигнал
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 }
-                });
-                
-                const mic = audioCtx.createMediaStreamSource(stream); 
-                const preGain = audioCtx.createGain(); preGain.gain.value = 15.0; 
-                const analyser = audioCtx.createAnalyser(); 
-                const script = audioCtx.createScriptProcessor(2048, 1, 1);
-                
-                // Фильтр как в игре
-                const filter = audioCtx.createBiquadFilter();
-                filter.type = 'bandpass';
-                filter.frequency.value = 600; 
-                filter.Q.value = 1.0; 
-
-                mic.connect(preGain);
-                preGain.connect(filter);
-                filter.connect(analyser);
-                analyser.connect(script);
-                
-                const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
-                script.connect(zeroGain); zeroGain.connect(audioCtx.destination);
-                
-                let noiseSamples = [];
-                let calibTime = 5;
-                
-                const countInt = setInterval(() => {
-                    calibTime--;
-                    document.getElementById('calibTimer').innerText = calibTime;
-                    document.getElementById('calibBar').style.width = ((5 - calibTime) / 5 * 100) + "%";
-                    if(calibTime <= 0) clearInterval(countInt);
-                }, 1000);
-
-                script.onaudioprocess = function() {
-                    const buf = new Uint8Array(analyser.frequencyBinCount);
-                    analyser.getByteTimeDomainData(buf);
-                    let sum = 0;
-                    for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
-                    let rms = Math.sqrt(sum / buf.length);
-                    noiseSamples.push(rms);
-                };
-
-                setTimeout(() => {
-                    script.disconnect(); mic.disconnect(); filter.disconnect(); analyser.disconnect(); zeroGain.disconnect();
-                    
-                    let avgNoise = 1; 
-                    if (noiseSamples.length > 0) {
-                        let sumNoise = noiseSamples.reduce((a, b) => a + b, 0);
-                        avgNoise = sumNoise / noiseSamples.length;
+                    audio: {
+                        echoCancellation: false,
+                        autoGainControl: false,
+                        noiseSuppression: false,
+                        latency: 0
                     }
-                    
-                    // ЕСЛИ ШУМ = 1, СТАВИМ ПОРОГ = 3.
-                    // МЫ ПРОСТО ЧУТЬ ПОДНИМАЕМСЯ НАД ШУМОМ.
-                    let newSens = Math.floor(avgNoise + 2);
-                    if(newSens < 2) newSens = 2; 
-                    
-                    updateSens(newSens);
-                    
-                    alert(`Шум в комнате: ${Math.floor(avgNoise)}\nПорог установлен: ${newSens}`);
-                    
-                    document.getElementById('calibModal').style.display = 'none';
-                    switchScreen('settings');
-                }, 5500); 
+                });
+
+                const source = audioCtx.createMediaStreamSource(stream);
+                analyser = audioCtx.createAnalyser();
+                analyser.smoothingTimeConstant = 0.2; // Меньше сглаживания для быстрой реакции
+                analyser.fftSize = 256;
+
+                // --- BANDPASS FILTER IMPLEMENTATION ---
+                // Создаем "коридор" от 300Hz до 1200Hz используя два фильтра.
+                // Это надежнее, чем один Bandpass-фильтр, у которого пологие скаты.
+                
+                // 1. Highpass (Срезаем низкие: гул, стол, шаги) -> Оставляем всё ВЫШЕ 300
+                const highPass = audioCtx.createBiquadFilter();
+                highPass.type = 'highpass';
+                highPass.frequency.value = 300; 
+
+                // 2. Lowpass (Срезаем высокие: свист, голоса) -> Оставляем всё НИЖЕ 1200
+                const lowPass = audioCtx.createBiquadFilter();
+                lowPass.type = 'lowpass';
+                lowPass.frequency.value = 1200;
+
+                // Цепочка: Mic -> HighPass -> LowPass -> Analyser
+                source.connect(highPass);
+                highPass.connect(lowPass);
+                lowPass.connect(analyser);
+
+                // Запускаем процессинг через ScriptProcessor (легаси, но работает везде)
+                // или requestAnimationFrame. Здесь используем простой цикл анализа.
+                processAudioLoop();
+
             } catch (e) {
-                alert("Ошибка: Разрешите микрофон!");
-                document.getElementById('calibModal').style.display = 'none';
+                alert("Ошибка доступа к микрофону: " + e.message);
             }
         }
 
-        const startBtn = document.getElementById('startBtn');
-        startBtn.addEventListener('click', async () => {
-            if(isRunning) return;
-            try {
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                if (!audioCtx) audioCtx = new AudioContextClass();
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
-                
-                const constraints = {
-                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 }
-                };
-                
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                const mic = audioCtx.createMediaStreamSource(stream); 
-                
-                const preGain = audioCtx.createGain();
-                preGain.gain.value = 15.0; 
+        function processAudioLoop() {
+            if(!isRunning) return;
+            requestAnimationFrame(processAudioLoop);
 
-                const filter = audioCtx.createBiquadFilter();
-                filter.type = 'bandpass';
-                filter.frequency.value = 600; 
-                filter.Q.value = 1.0;
-                
-                const analyser = audioCtx.createAnalyser(); 
-                analyser.fftSize = 512; 
-                
-                const script = audioCtx.createScriptProcessor(2048, 1, 1);
-                const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
-                
-                mic.connect(preGain);
-                preGain.connect(filter);
-                filter.connect(analyser);
-                analyser.connect(script);
-                script.connect(zeroGain);
-                zeroGain.connect(audioCtx.destination);
-                
-                startBtn.style.display = 'none'; 
-                document.querySelector('.mode-selector').style.opacity = '0.3';
-                document.getElementById('bottomMenu').style.display = 'none';
-                document.getElementById('scoreDisplay').classList.remove('pulse');
+            // "Audio Blindness" - если недавно был звук игры, не слушаем микрофон
+            if (Date.now() < audioBlockedUntil) return;
 
-                isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
-                timeLeft = (currentMode === 'survival') ? 10 : 60;
-                document.getElementById('timer').innerText = timeLeft;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
 
-                if (timerInterval) clearInterval(timerInterval);
-                if (metronomeInterval) clearInterval(metronomeInterval);
+            // Расчет RMS (Root Mean Square)
+            let sum = 0;
+            for(let i = 0; i < bufferLength; i++) {
+                let x = (dataArray[i] - 128) / 128.0; // Нормализация от -1 до 1
+                sum += x * x;
+            }
+            let rms = Math.sqrt(sum / bufferLength);
 
-                if(currentMode === 'rhythm') {
-                    playSound('tick');
-                    metronomeInterval = setInterval(() => { if(isRunning) playSound('tick'); }, 600);
+            // Конвертация в Децибелы (dB)
+            // Добавляем минимальное значение, чтобы логарифм не ушел в -Infinity
+            let db = 20 * Math.log10(rms + 0.00001); 
+            // db обычно будет от -100 (тишина) до 0 (макс громкость)
+
+            // Динамический Noise Floor (медленная адаптация)
+            if (db < noiseFloor) {
+                // Если стало тише, опускаем планку фона быстрее
+                noiseFloor = noiseFloor * 0.95 + db * 0.05;
+            } else {
+                // Если стало громче, поднимаем планку фона ОЧЕНЬ медленно (чтобы удары не задирали фон)
+                noiseFloor = noiseFloor * 0.999 + db * 0.001;
+            }
+
+            // Визуализация для отладки
+            document.getElementById('lastHitVal').innerText = Math.floor(db);
+            document.getElementById('noiseFloorVal').innerText = Math.floor(noiseFloor);
+            
+            // Визуализация бара (приводим диапазон -60...0 к 0...100%)
+            let visualPercent = (db + 60) * 2; 
+            if(visualPercent < 0) visualPercent = 0;
+            if(visualPercent > 100) visualPercent = 100;
+            document.getElementById('micLevel').style.width = visualPercent + "%";
+
+            // --- ДЕТЕКЦИЯ УДАРА ---
+            // Удар засчитывается, если текущая громкость выше фона на SENSITIVITY_DB
+            const threshold = noiseFloor + SENSITIVITY_DB;
+            
+            if (db > threshold) {
+                const now = Date.now();
+                if (now - lastHitTime > MIN_HIT_DELAY) {
+                    registerHit();
+                    lastHitTime = now;
                 }
+            }
+        }
 
-                timerInterval = setInterval(() => { 
-                    timeLeft -= 1; document.getElementById('timer').innerText = Math.floor(timeLeft); 
-                    if(timeLeft <= 0) { 
-                        clearInterval(timerInterval); if(metronomeInterval) clearInterval(metronomeInterval);
-                        isRunning = false; finishGame(); 
-                    } 
-                }, 1000);
-
-                script.onaudioprocess = function() {
-                    if(!isRunning) return;
-                    
-                    // --- BLIND SPOT CHECK (СЛЕПОЕ ПЯТНО) ---
-                    // Если мы недавно издали звук, мы оглохли
-                    if(Date.now() < ignoreAudioUntil) return;
-
-                    const buf = new Uint8Array(analyser.frequencyBinCount);
-                    analyser.getByteTimeDomainData(buf);
-                    
-                    let sum = 0;
-                    for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
-                    let rms = Math.sqrt(sum / buf.length);
-                    let val = Math.floor(rms); 
-
-                    const visual = Math.min(val * 2, 100);
-                    document.getElementById('micLevel').style.width = visual + "%";
-                    
-                    document.getElementById('debugVol').innerText = val;
-
-                    if (val > SENSITIVITY) {
-                        const now = Date.now();
-                        // 150ms задержка, чтобы не считать эхо
-                        if(now - lastHitTime > 150) {
-                            score++; 
-                            registerHitVisual();
-                            lastHitTime = now;
-                            
-                            // ВКЛЮЧАЕМ СЛЕПОЕ ПЯТНО НА 150 МС
-                            // Пока играет звук, микрофон не слушает
-                            ignoreAudioUntil = now + 150; 
-                            
-                            return; 
-                        }
-                    }
-                }
-            } catch(e) { alert("Ошибка: Разрешите микрофон!"); }
-        });
-
-        function registerHitVisual() {
-            const el = document.getElementById('scoreDisplay'); el.innerText = score; 
-            el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 300);
-
+        function registerHit() {
+            score++; 
+            const el = document.getElementById('scoreDisplay');
+            el.innerText = score;
+            
+            // Анимация
+            el.classList.add('shake'); 
+            setTimeout(()=>el.classList.remove('shake'), 300);
+            
             if (currentMode === 'survival') {
                 el.classList.add('hit-survival');
                 let bonus = 1.0; if (score > 20) bonus = 0.5; if (score > 50) bonus = 0.25;
@@ -622,71 +493,80 @@
                 el.classList.add('hit'); 
             }
             
-            setTimeout(()=>el.className = 'score-circle', 100); 
+            setTimeout(()=>el.className = 'score-circle', 100);
             playSound('hit'); 
         }
 
-        function finishGame() { 
-            isRunning = false; playSound('end'); launchConfetti();
-            document.getElementById('scoreDisplay').classList.add('pulse');
-            
-            const cals = Math.floor(score * 0.05); 
-            let rank = "НОВИЧОК";
-            if(score > 30) rank = "ЛЮБИТЕЛЬ";
-            if(score > 60) rank = "БОЕЦ";
-            if(score > 100) rank = "МАШИНА";
-            if(score > 150) rank = "ЛЕГЕНДА";
-
-            totalHits += score;
-            localStorage.setItem('box_total_hits', totalHits);
-
-            document.getElementById('finalScore').innerText = score; 
-            document.getElementById('resCalories').innerText = cals;
-            document.getElementById('resMode').innerText = currentMode.toUpperCase();
-            document.getElementById('rankDisplay').innerText = rank;
-            
-            personalBest = parseInt(localStorage.getItem('box_pb_' + currentMode)) || 0;
-            if (score > personalBest && score > 5) {
-                localStorage.setItem('box_pb_' + currentMode, score);
-                document.getElementById('recordMsg').innerText = "🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД!";
-                document.getElementById('reviewModal').style.display = 'flex';
-            } else {
-                document.getElementById('recordMsg').innerText = "";
-            }
-
-            document.querySelector('.mode-selector').style.opacity = '1';
-            document.getElementById('legalCheck').checked = false;
-            document.getElementById('startBtn').style.display = 'block'; 
-            
-            checkSavedName(); 
-            toggleSaveBtn(); 
-            
-            document.getElementById('screen-game').classList.remove('active');
-            document.getElementById('screen-save').classList.add('active');
-            document.getElementById('bottomMenu').style.display = 'flex';
-        }
+        // --- 4. КАЛИБРОВКА (NOISE FLOOR) ---
         
-        function saveScore() {
-            let name = "";
-            const savedName = localStorage.getItem('box_username');
+        async function startAutoCalibration() {
+            document.getElementById('settingsPanel').style.display = 'none';
+            document.getElementById('calibModal').style.display = 'flex';
             
-            if (savedName && document.getElementById('nameDisplayArea').style.display !== 'none') {
-                name = savedName;
-            } else {
-                name = document.getElementById('nicknameInput').value.trim();
-                if(name.length < 2) { alert("Введите имя!"); return; }
-                localStorage.setItem('box_username', name); 
-            }
+            try {
+                await initAudio();
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+                const source = audioCtx.createMediaStreamSource(stream);
+                const an = audioCtx.createAnalyser();
+                an.fftSize = 256;
+                source.connect(an); // Без фильтров, меряем чистый шум комнаты
+                
+                let samples = [];
+                let seconds = 10;
+                
+                // Таймер UI
+                const timerInt = setInterval(() => {
+                    seconds--;
+                    document.getElementById('calibTimer').innerText = seconds;
+                    document.getElementById('calibBar').style.width = ((10-seconds)/10*100) + "%";
+                    if(seconds <= 0) clearInterval(timerInt);
+                }, 1000);
 
-            const btn = document.querySelector('#screen-save button');
-            btn.innerText = "ОТПРАВКА..."; btn.disabled = true;
-            fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ name: name, score: score, mode: currentMode, date: new Date().toLocaleDateString() }) })
-            .then(() => {
-                switchScreen('leaders');
-                btn.innerText = "СОХРАНИТЬ В ТОП"; btn.disabled = false;
-            })
-            .catch(() => switchScreen('leaders'));
+                // Сбор данных
+                const collectInt = setInterval(() => {
+                    const data = new Uint8Array(an.frequencyBinCount);
+                    an.getByteTimeDomainData(data);
+                    
+                    let sum = 0;
+                    for(let i=0; i<data.length; i++) {
+                        let x = (data[i] - 128) / 128.0;
+                        sum += x * x;
+                    }
+                    let rms = Math.sqrt(sum / data.length);
+                    let db = 20 * Math.log10(rms + 0.00001);
+                    
+                    // Игнорируем совсем дикие выбросы (например, если кто-то чихнул)
+                    if(db > -100 && db < 0) samples.push(db);
+                    
+                }, 100);
+
+                setTimeout(() => {
+                    clearInterval(collectInt);
+                    stream.getTracks().forEach(t => t.stop()); // Stop mic
+                    
+                    if(samples.length > 0) {
+                        // Считаем средний шум
+                        let sumDb = samples.reduce((a,b) => a+b, 0);
+                        let avgDb = sumDb / samples.length;
+                        
+                        noiseFloor = avgDb; // Устанавливаем базу
+                        
+                        // Сохраняем Sensitivity (она остается относительной)
+                        alert(`Калибровка завершена!\nУровень шума: ${Math.floor(avgDb)}dB`);
+                    } else {
+                        alert("Не удалось замерить шум.");
+                    }
+                    
+                    document.getElementById('calibModal').style.display = 'none';
+                }, 10000);
+                
+            } catch(e) {
+                alert("Ошибка микрофона: " + e);
+                document.getElementById('calibModal').style.display = 'none';
+            }
         }
+
+        // --- 5. UI & UTILS ---
 
         function openSkins() {
             const grid = document.getElementById('skinsGrid');
@@ -703,6 +583,8 @@
                     ${lockIcon}
                 </div>`;
             }
+            document.getElementById('settingsPanel').style.display = 'none';
+            document.getElementById('skinsModal').style.display = 'flex';
         }
 
         function selectTheme(key, cost) {
@@ -711,7 +593,7 @@
                 return;
             }
             applyTheme(key);
-            openSkins();
+            document.getElementById('skinsModal').style.display = 'none';
         }
 
         function applyTheme(key) {
@@ -731,13 +613,14 @@
             else { el.classList.add('on'); isSoundOn = true; }
             localStorage.setItem('box_sound', !isOn);
         }
+
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         
         function checkCode() { 
             const val = document.getElementById('passInput').value.trim();
             if(VALID_CODES.includes(val)) { 
                 localStorage.setItem('box_auth', 'true'); 
-                document.getElementById('screen-login').classList.remove('active');
-                switchScreen('game'); 
+                showScreen('screen-game'); 
                 showToast(); 
             } 
             else { document.getElementById('errorMsg').style.display = 'block'; }
@@ -764,17 +647,25 @@
         
         function toggleSaveBtn() { document.getElementById('saveBtn').disabled = !document.getElementById('legalCheck').checked; }
         function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
+        function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
         
         function updateSens(val) { 
-            SENSITIVITY = parseInt(val); 
-            document.getElementById('sensVal').innerText = SENSITIVITY; 
-            document.getElementById('sensRange').value = SENSITIVITY;
-            const percent = Math.min(SENSITIVITY * 2, 100); 
-            document.getElementById('micThresh').style.left = percent + "%";
-            localStorage.setItem('box_sens', SENSITIVITY); 
+            SENSITIVITY_DB = parseInt(val); 
+            document.getElementById('sensVal').innerText = SENSITIVITY_DB; 
+            document.getElementById('sensRange').value = SENSITIVITY_DB;
+            
+            // Двигаем порог визуально
+            // База визуализации 0..100%, где 0 = -60dB, 100 = 0dB
+            // Это грубое приближение для UI
+            const visualPercent = 25 + (SENSITIVITY_DB * 1.5); 
+            document.getElementById('micThresh').style.left = visualPercent + "%";
+            
+            localStorage.setItem('box_sens_db', SENSITIVITY_DB); 
         }
         
-        function setRecommended() { updateSens(3); } 
+        function setRecommended() { updateSens(15); } 
+        function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
+        
         function openReviewLink(url) { 
             window.Telegram.WebApp.openLink(url); 
             document.getElementById('reviewModal').style.display = 'none'; 
@@ -803,34 +694,39 @@
             }
         }
 
-        // --- ЗВУКОВОЙ ДВИЖОК: КОРОТКИЙ ТИК ---
+        // --- 6. SOUND OUTPUT & BLINDNESS ---
+
         function playSound(type) {
             if (!isSoundOn) return;
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if (!audioCtx) return;
             
-            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            // AUDIO BLINDNESS: Блокируем микрофон на 200мс после воспроизведения
+            // чтобы игра не слышала сама себя
+            audioBlockedUntil = Date.now() + 200;
+
+            const osc = audioCtx.createOscillator(); 
+            const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             
+            const t = audioCtx.currentTime;
+
             if (type === 'hit') {
-                // Короткий "Тик" (50мс)
-                osc.frequency.setValueAtTime(1500, audioCtx.currentTime); 
-                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime+0.05);
+                // Короткий "щелчок"
+                osc.frequency.setValueAtTime(800, t); 
+                osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
                 
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.05);
+                gain.gain.setValueAtTime(0.3, t); 
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
                 
-                osc.start(); osc.stop(audioCtx.currentTime+0.05);
-            } 
-            else if (type === 'tick') {
-                osc.frequency.setValueAtTime(2500, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.05);
-                osc.type = 'square'; osc.start(); osc.stop(audioCtx.currentTime+0.05);
-            } 
-            else if (type === 'end') {
-                osc.frequency.value = 200; gain.gain.setValueAtTime(0.5, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1.5);
-                osc.start(); osc.stop(audioCtx.currentTime+1.5);
+                osc.start(t); osc.stop(t + 0.1);
+            } else if (type === 'tick') {
+                osc.frequency.setValueAtTime(1000, t);
+                gain.gain.setValueAtTime(0.2, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                osc.type = 'square'; osc.start(t); osc.stop(t + 0.05);
+            } else if (type === 'end') {
+                osc.frequency.value = 200; gain.gain.setValueAtTime(0.5, t); gain.gain.linearRampToValueAtTime(0, t + 1.5);
+                osc.start(t); osc.stop(t + 1.5);
             }
         }
 
@@ -847,6 +743,104 @@
             }
         }
 
+        // --- 7. GAME LOOP CONTROLS ---
+
+        const startBtn = document.getElementById('startBtn');
+        startBtn.addEventListener('click', async () => {
+            if(isRunning) return;
+            
+            // Инициализация аудио и старт лупа
+            await startListening();
+
+            // UI changes
+            startBtn.style.display = 'none'; document.getElementById('settingsPanel').style.display = 'none';
+            document.querySelector('.mode-selector').style.opacity = '0.3';
+            document.querySelector('.secondary-btn').style.display = 'none'; 
+            
+            isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
+            timeLeft = (currentMode === 'survival') ? 10 : 60;
+            document.getElementById('timer').innerText = timeLeft;
+
+            if (timerInterval) clearInterval(timerInterval);
+            if (metronomeInterval) clearInterval(metronomeInterval);
+
+            if(currentMode === 'rhythm') {
+                playSound('tick');
+                metronomeInterval = setInterval(() => { if(isRunning) playSound('tick'); }, 600);
+            }
+
+            timerInterval = setInterval(() => { 
+                timeLeft -= 1; document.getElementById('timer').innerText = Math.floor(timeLeft); 
+                if(timeLeft <= 0) { 
+                    clearInterval(timerInterval); if(metronomeInterval) clearInterval(metronomeInterval);
+                    isRunning = false; finishGame(); 
+                } 
+            }, 1000);
+        });
+
+        function finishGame() { 
+            isRunning = false; playSound('end'); launchConfetti();
+            
+            const cals = Math.floor(score * 0.05); 
+            let rank = "НОВИЧОК";
+            if(score > 30) rank = "ЛЮБИТЕЛЬ";
+            if(score > 60) rank = "БОЕЦ";
+            if(score > 100) rank = "МАШИНА";
+            if(score > 150) rank = "ЛЕГЕНДА";
+
+            totalHits += score;
+            localStorage.setItem('box_total_hits', totalHits);
+
+            document.getElementById('finalScore').innerText = score; 
+            document.getElementById('resCalories').innerText = cals;
+            document.getElementById('resMode').innerText = currentMode.toUpperCase();
+            document.getElementById('rankDisplay').innerText = rank;
+            
+            personalBest = parseInt(localStorage.getItem('box_pb_' + currentMode)) || 0;
+            if (score > personalBest && score > 10) {
+                localStorage.setItem('box_pb_' + currentMode, score);
+                document.getElementById('recordMsg').innerText = "🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД!";
+                document.getElementById('reviewModal').style.display = 'flex';
+            } else {
+                document.getElementById('recordMsg').innerText = "";
+            }
+
+            document.querySelector('.mode-selector').style.opacity = '1';
+            document.getElementById('legalCheck').checked = false;
+            
+            checkSavedName(); 
+            toggleSaveBtn(); 
+            showScreen('screen-save'); 
+        }
+        
+        function saveScore() {
+            let name = "";
+            const savedName = localStorage.getItem('box_username');
+            
+            if (savedName && document.getElementById('nameDisplayArea').style.display !== 'none') {
+                name = savedName;
+            } else {
+                name = document.getElementById('nicknameInput').value.trim();
+                if(name.length < 2) { alert("Введите имя!"); return; }
+                localStorage.setItem('box_username', name); 
+            }
+
+            const btn = document.querySelector('#screen-save button');
+            btn.innerText = "ОТПРАВКА..."; btn.disabled = true;
+            
+            // FIX: Убрал mode: 'no-cors', чтобы получать JSON ответ
+            fetch(GOOGLE_SCRIPT_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ name: name, score: score, mode: currentMode, date: new Date().toLocaleDateString() }) 
+            })
+            .then(() => showLeaderboard(false, currentMode))
+            .catch((e) => {
+                alert("Ошибка отправки. Проверьте интернет.");
+                btn.innerText = "СОХРАНИТЬ В ТОП";
+                btn.disabled = false;
+            });
+        }
+
         function switchLeaderTab(mode) {
             document.querySelectorAll('.leader-tab').forEach(t => t.className = 'leader-tab');
             document.getElementById('tab' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active-tab');
@@ -854,6 +848,15 @@
         }
 
         function showLeaderboard(fromMenu = false, initialMode = 'sprint') {
+            showScreen('screen-leaders');
+            const backBtn = document.getElementById('leaderBackBtn');
+            if(fromMenu) {
+                backBtn.innerText = "НАЗАД В МЕНЮ";
+                backBtn.onclick = function() { showScreen('screen-game'); };
+            } else {
+                backBtn.innerText = "ИГРАТЬ СНОВА";
+                backBtn.onclick = function() { location.reload(); };
+            }
             switchLeaderTab(initialMode);
         }
 
@@ -877,7 +880,9 @@
                     </div>`;
                 });
             })
-            .catch(()=>list.innerHTML = "<div style='padding:20px'>Ошибка сети</div>");
+            .catch(e => {
+                list.innerHTML = "<div style='padding:20px; color:#ff4d4d;'>Ошибка загрузки.<br>Проверьте CORS скрипта.</div>";
+            });
         }
     </script>
 </body>
