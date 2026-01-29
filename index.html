@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Pro</title>
+    <title>BoxBall Pro V3</title>
     
     <script>
         // --- КОНФИГУРАЦИЯ ---
@@ -13,7 +13,7 @@
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
         const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";     
         
-        const VALID_CODES = ["6433", "0309", "5528", "1111"]; // Добавил тестовый код
+        const VALID_CODES = ["6433", "0309", "5528", "1111"];
         const CHANNEL_URL = "https://t.me/DUROV";
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -63,7 +63,8 @@
         }
         
         .last-hit-info {
-            font-size: 12px; color: #aaa; margin-top: 8px; font-family: monospace; font-weight: bold;
+            font-size: 11px; color: #666; margin-top: 8px; font-family: monospace; font-weight: bold; width: 90%;
+            display: flex; justify-content: space-between;
         }
         
         @keyframes shake-anim {
@@ -200,13 +201,13 @@
 
     <div id="calibModal" class="calibration-overlay">
         <h2 style="color:white; margin-bottom:5px;">🥊 БЕЙ ПО МЯЧУ!</h2>
-        <p style="color:#aaa; max-width:80%; font-size:14px; margin-bottom:20px;">Набивай в обычном ритме 15 секунд.<br>Мы настроим алгоритм под твой удар.</p>
+        <p style="color:#aaa; max-width:80%; font-size:14px; margin-bottom:20px;">Сделай 5-6 сильных ударов.<br>Мы настроим фильтры.</p>
         <div class="calib-circle" id="calibTimer">15</div>
         <div class="calib-progress"><div class="calib-bar" id="calibBar"></div></div>
-        <p style="color:#666; font-size:12px; margin-top:15px;">Анализ резкости удара...</p>
+        <p style="color:#666; font-size:12px; margin-top:15px;">Слушаем резкие звуки...</p>
     </div>
     
-    <div id="toast" class="toast">📢 Новое место? Сделай калибровку в опциях!</div>
+    <div id="toast" class="toast">📢 Не слышит? Убавь звук на телефоне!</div>
 
     <div id="reviewModal" class="modal-overlay">
         <div class="modal-content">
@@ -223,7 +224,7 @@
 
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">AI SOUND TRACKING</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">TENNIS BALL TUNED</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -235,7 +236,7 @@
         <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433, 0309 или 5528</p>
         
         <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
-            © 2026 BOXBALL RUSSIA. v2.1 PRO
+            © 2026 BOXBALL RUSSIA. V3 (SHARP)
         </div>
     </div>
 
@@ -250,7 +251,7 @@
             <div style="background:rgba(255,255,255,0.1); padding:8px 25px; border-radius:20px; font-weight:bold; color:#fff; font-size: 42px; min-width: 110px;" id="timer">60</div>
         </div>
         
-        <div class="shield-icon">🛡️ SMART FILTER ACTIVE</div>
+        <div class="shield-icon">🛡️ POP-FILTER ACTIVE</div>
         
         <div class="score-circle pulse" id="scoreDisplay">0</div>
         
@@ -258,11 +259,13 @@
             <div class="volume-bar" id="micLevel"></div>
             <div class="volume-threshold" id="micThresh"></div>
         </div>
+        
         <div class="last-hit-info">
-            УРОВЕНЬ: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span> / <span id="debugDelta" style="color:#aaa;">0</span>
+            <span>Громкость: <span id="debugVol" style="color:#fff;">0</span></span>
+            <span>Резкость: <span id="debugDelta" style="color:#00ff88;">0</span></span>
         </div>
         
-        <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
+        <div style="color:#666; font-size:10px; margin-top:5px; margin-bottom:10px;" id="modeHint">ЕСЛИ НЕ СЛЫШИТ: ПРИБАВЬ ЧУВСТВИТЕЛЬНОСТЬ В ОПЦИЯХ</div>
 
         <button id="startBtn">НАЧАТЬ РАУНД</button>
     </div>
@@ -286,10 +289,11 @@
 
             <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА (15 сек)</button>
             
-            <label style="font-size:12px; color:#ccc;">Чувствительность: <span id="sensVal">15</span></label>
-            <input type="range" id="sensRange" min="5" max="80" value="15" oninput="updateSens(this.value)">
+            <label style="font-size:12px; color:#ccc;">Чувствительность: <span id="sensVal">10</span></label>
+            <input type="range" id="sensRange" min="2" max="60" value="10" oninput="updateSens(this.value)">
+            <p style="font-size:10px; color:#666; margin-top:-10px;">Меньше число = легче ударять</p>
             
-            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 15px;">Сброс (Авто)</button>
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 15px;">Сброс на 10</button>
             
             <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; margin-bottom: 5px;">🚪 Выйти из аккаунта</button>
         </div>
@@ -336,9 +340,9 @@
 
     <script>
         // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
-        let MIN_HIT_DELAY = 120; // Динамическая задержка
-        let SENSITIVITY = 15;     // Порог громкости
-        let SHARPNESS_THRESH = 4; // Порог "резкости" (Delta)
+        let MIN_HIT_DELAY = 100; // Уменьшил задержку для быстрых ударов
+        let SENSITIVITY = 10;     // Порог громкости (ниже = чувствительнее)
+        let SHARPNESS_THRESH = 2; // Порог "резкости" (Delta) - стал ниже
         
         let score = 0, isRunning = false, lastHitTime = 0;
         let currentMode = 'sprint'; 
@@ -355,8 +359,7 @@
 
         // Переменные для анализа звука
         let previousRms = 0; 
-        let noiseFloor = 5;
-
+        
         const THEMES = {
             'default': { name: 'Неон (Стандарт)', color: '#ff0055', bg1: '#1a0b0b', bg2: '#000000', cost: 0 },
             'cyber': { name: 'Кибер (500 уд.)', color: '#00ccff', bg1: '#0b1a1a', bg2: '#000000', cost: 500 },
@@ -369,7 +372,7 @@
             
             // Загрузка сохраненных настроек
             const savedSens = localStorage.getItem('box_sens');
-            if(savedSens) updateSens(savedSens); else updateSens(15);
+            if(savedSens) updateSens(savedSens); else updateSens(10); // Дефолт 10
 
             totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
             document.getElementById('totalHitsLogin').innerText = totalHits.toLocaleString();
@@ -419,7 +422,7 @@
             }
         }
 
-        // --- УМНАЯ КАЛИБРОВКА (SMART CALIBRATION) ---
+        // --- УМНАЯ КАЛИБРОВКА ---
         async function startAutoCalibration() {
             document.getElementById('calibModal').style.display = 'flex';
             
@@ -436,14 +439,14 @@
                 });
                 
                 const mic = audioCtx.createMediaStreamSource(stream); 
-                const preGain = audioCtx.createGain(); preGain.gain.value = 3.0; 
+                const preGain = audioCtx.createGain(); preGain.gain.value = 6.0; // Высокое усиление
                 const analyser = audioCtx.createAnalyser(); 
                 const script = audioCtx.createScriptProcessor(2048, 1, 1);
                 
-                // Фильтр для выделения ударов
+                // Используем Highpass для калибровки
                 const filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.value = 600; 
+                filter.type = 'highpass';
+                filter.frequency.value = 200; 
 
                 mic.connect(preGain);
                 preGain.connect(filter);
@@ -473,11 +476,10 @@
                     for (let i = 0; i < buf.length; i++) { let x = buf[i] - 128; sum += x * x; }
                     let rms = Math.sqrt(sum / buf.length);
                     
-                    // Собираем шум
                     noiseSamples.push(rms);
                     
-                    // Ищем пики (удары) - если резкий скачок
-                    if(rms > lastCalibRms + 5 && rms > 10) {
+                    // Ищем удары (скачки)
+                    if(rms > lastCalibRms + 3 && rms > 8) {
                          peaks.push(rms);
                     }
                     lastCalibRms = rms;
@@ -487,30 +489,26 @@
                     script.disconnect(); mic.disconnect(); filter.disconnect(); analyser.disconnect(); zeroGain.disconnect();
                     
                     if (noiseSamples.length > 0) {
-                        // 1. Считаем средний шум
                         let sumNoise = noiseSamples.reduce((a, b) => a + b, 0);
                         let avgNoise = sumNoise / noiseSamples.length;
                         
-                        // 2. Считаем средний удар (если были)
-                        let avgPeak = 40; // Дефолт
+                        let avgPeak = 30; // Дефолт если ударов не было
                         if(peaks.length > 2) {
-                            peaks.sort((a,b) => b-a); // Сортируем по убыванию
-                            let topPeaks = peaks.slice(0, Math.min(peaks.length, 5)); // Берем топ-5 ударов
+                            peaks.sort((a,b) => b-a); 
+                            let topPeaks = peaks.slice(0, Math.min(peaks.length, 5));
                             avgPeak = topPeaks.reduce((a,b)=>a+b,0) / topPeaks.length;
                         }
                         
-                        // 3. Формула идеального порога: Шум + (Удар - Шум) * 0.5
-                        // Мы ставим порог посередине между шумом и ударом
-                        let newSens = avgNoise + (avgPeak - avgNoise) * 0.45;
+                        // Формула: ставим порог чуть выше шума, но ниже пиков
+                        let newSens = avgNoise + (avgPeak - avgNoise) * 0.4;
                         
-                        // Защитные границы
-                        if(newSens < 5) newSens = 5; 
-                        if(newSens > 60) newSens = 60;
+                        if(newSens < 4) newSens = 4; 
+                        if(newSens > 50) newSens = 50;
                         
                         let finalSens = Math.floor(newSens);
                         updateSens(finalSens);
                         
-                        alert(`Готово!\nПорог удара: ${finalSens}\nШум комнаты: ${Math.floor(avgNoise)}`);
+                        alert(`Готово!\nПорог: ${finalSens}\nШум: ${Math.floor(avgNoise)}`);
                     }
                     document.getElementById('calibModal').style.display = 'none';
                     switchScreen('settings');
@@ -521,7 +519,7 @@
             }
         }
 
-        // --- ЛОГИКА ИГРЫ (ОСНОВНОЙ ЦИКЛ) ---
+        // --- ЛОГИКА ИГРЫ ---
         const startBtn = document.getElementById('startBtn');
         startBtn.addEventListener('click', async () => {
             if(isRunning) return;
@@ -529,7 +527,6 @@
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') await audioCtx.resume();
                 
-                // Настройки специально для WebView Android
                 const constraints = {
                     audio: {
                         echoCancellation: false, noiseSuppression: false, autoGainControl: false,
@@ -542,14 +539,16 @@
                 
                 const mic = audioCtx.createMediaStreamSource(stream); 
                 
-                // Pre-Amp (усиление сигнала)
+                // 1. УСИЛЕНИЕ
                 const preGain = audioCtx.createGain();
-                preGain.gain.value = 3.5; 
+                preGain.gain.value = 6.0; // Было 3.5, стало 6.0 (слышит лучше)
 
-                // LowPass Фильтр (убирает свист и высокие частоты)
+                // 2. ФИЛЬТР (Highpass вместо Lowpass)
+                // Пропускаем все, что выше 200Гц. "Щелчок" мяча - это 800-2000Гц.
+                // Lowpass 600Гц (старый) убивал звук теннисного мяча.
                 const filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.value = 600; 
+                filter.type = 'highpass';
+                filter.frequency.value = 200; 
                 
                 const analyser = audioCtx.createAnalyser(); 
                 analyser.fftSize = 512; 
@@ -564,7 +563,6 @@
                 script.connect(zeroGain);
                 zeroGain.connect(audioCtx.destination);
                 
-                // UI старт
                 startBtn.style.display = 'none'; 
                 document.querySelector('.mode-selector').style.opacity = '0.3';
                 document.getElementById('bottomMenu').style.display = 'none';
@@ -590,9 +588,9 @@
                     } 
                 }, 1000);
 
-                previousRms = 0; // Сброс памяти уровня
+                previousRms = 0; 
 
-                // === ГЛАВНЫЙ АЛГОРИТМ ОБРАБОТКИ ===
+                // === ОБРАБОТКА ЗВУКА ===
                 script.onaudioprocess = function() {
                     if(!isRunning) return;
                     
@@ -604,44 +602,43 @@
                     let rms = Math.sqrt(sum / buf.length);
                     let val = Math.floor(rms); 
 
-                    // Визуализация
+                    // Визуал
                     const visual = Math.min(val * 2, 100);
                     document.getElementById('micLevel').style.width = visual + "%";
                     
-                    // Вычисляем "Резкость" (Delta)
+                    // Вычисляем "Delta" (насколько резко вырос звук)
                     let delta = val - previousRms;
-                    document.getElementById('lastHitVal').innerText = val;
+                    
+                    // Отладка на экране
+                    document.getElementById('debugVol').innerText = val;
                     document.getElementById('debugDelta').innerText = delta;
 
-                    // УСЛОВИЕ УДАРА:
-                    // 1. Громкость выше порога (SENSITIVITY)
-                    // 2. Резкий скачок вверх (delta > 3-4) - это отсекает плавные крики
+                    // УСЛОВИЕ:
+                    // val > SENSITIVITY (громче фона)
+                    // delta >= SHARPNESS_THRESH (резкий скачок, а не плавный гул)
                     if (val > SENSITIVITY && delta >= SHARPNESS_THRESH) {
                         const now = Date.now();
                         
-                        // Динамическая задержка: если удары частые, уменьшаем задержку
                         let currentDelay = MIN_HIT_DELAY;
-                        if(score > 50) currentDelay = 90; // Быстрее на высоких скоростях
+                        if(score > 60) currentDelay = 90; // Быстрее удары = меньше задержка
                         
                         if(now - lastHitTime > currentDelay) {
                             score++; 
                             registerHitVisual();
                             lastHitTime = now;
                             
-                            // Хак: Временно завышаем "предыдущее значение", 
-                            // чтобы эхо от удара не засчиталось как второй удар
-                            previousRms = val + 15; 
+                            // Хак против эхо: считаем что звук был еще громче, чтобы следующий кадр (эхо) дал отрицательную дельту
+                            previousRms = val + 20; 
                             return; 
                         }
                     }
                     
-                    // Плавное обновление "фона" (для сравнения со следующим кадром)
                     previousRms = val;
                 }
             } catch(e) { alert("Ошибка: Разрешите микрофон!"); }
         });
 
-        // --- ОСТАЛЬНЫЕ ФУНКЦИИ (ВИЗУАЛ, СОХРАНЕНИЕ) ---
+        // --- ФУНКЦИИ UI ---
         function registerHitVisual() {
             const el = document.getElementById('scoreDisplay'); el.innerText = score; 
             el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 300);
@@ -721,7 +718,6 @@
             .catch(() => switchScreen('leaders'));
         }
 
-        // --- ТЕМЫ И СКИНЫ ---
         function openSkins() {
             const grid = document.getElementById('skinsGrid');
             grid.innerHTML = '';
@@ -758,7 +754,6 @@
             root.style.setProperty('--bg-grad-end', t.bg2);
         }
 
-        // --- УТИЛИТЫ ---
         function toggleOption(opt) {
             const el = document.getElementById('togSound');
             const isOn = el.classList.contains('on');
@@ -809,7 +804,7 @@
             localStorage.setItem('box_sens', SENSITIVITY); 
         }
         
-        function setRecommended() { updateSens(15); } 
+        function setRecommended() { updateSens(10); } 
         function openReviewLink(url) { 
             window.Telegram.WebApp.openLink(url); 
             document.getElementById('reviewModal').style.display = 'none'; 
