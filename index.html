@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Russia Final</title>
+    <title>BoxBall Russia</title>
     
+    <!-- 👇 НАСТРОЙКИ 👇 -->
     <script>
         const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
         const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА";
@@ -15,6 +16,8 @@
         const VALID_CODES = ["6433", "0309", "5528"];
         const CHANNEL_URL = "https://t.me/DUROV";
     </script>
+    <!-- 👆 КОНЕЦ НАСТРОЕК 👆 -->
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -37,6 +40,7 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.3s; }
         .active { display: flex; opacity: 1; }
 
+        /* ИГРОВОЙ КРУГ */
         .score-circle {
             width: 210px; height: 210px; border-radius: 50%; border: 8px solid #333;
             display: flex; align-items: center; justify-content: center;
@@ -45,37 +49,31 @@
             transition: border-color 0.1s; position: relative; z-index: 2;
         }
         
+        /* Визуализатор громкости */
         .volume-meter {
             width: 240px; height: 16px; background: #222; border-radius: 8px; margin-top: 15px;
             position: relative; overflow: hidden; border: 1px solid #444;
         }
-        .volume-bar { height: 100%; background: #00ff88; width: 0%; transition: width 0.05s; }
+        .volume-bar {
+            height: 100%; background: #00ff88; width: 0%; transition: width 0.05s;
+        }
+        
         .volume-threshold {
             position: absolute; top: 0; bottom: 0; width: 4px; background: #ff0055; z-index: 5;
             left: 20%; box-shadow: 0 0 8px #ff0055; transition: left 0.2s; opacity: 0.8;
         }
         
-        .last-hit-info { font-size: 12px; color: #aaa; margin-top: 8px; font-family: monospace; font-weight: bold; }
+        .last-hit-info {
+            font-size: 12px; color: #aaa; margin-top: 8px; font-family: monospace; font-weight: bold;
+        }
         
         @keyframes shake-anim {
             0% { transform: translate(1px, 1px); } 25% { transform: translate(-2px, -2px); }
             50% { transform: translate(2px, 0px); } 75% { transform: translate(-1px, 2px); } 100% { transform: translate(0, 0); }
         }
         .shake { animation: shake-anim 0.1s; }
-        .hit { border-color: var(--primary); box-shadow: 0 0 50px var(--primary); color: var(--primary); }
 
-        .combo-popup {
-            position: absolute; top: 65%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 32px; font-weight: 900; color: #ffcc00; pointer-events: none;
-            opacity: 0; z-index: 20; text-shadow: 0 0 15px rgba(255, 204, 0, 0.8);
-            white-space: nowrap;
-        }
-        .combo-pop-anim { animation: pop-up 1.5s forwards; }
-        @keyframes pop-up {
-            0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
-            15% { opacity: 1; transform: translate(-50%, -30px) scale(1.3); }
-            100% { opacity: 0; transform: translate(-50%, -80px) scale(1); }
-        }
+        .hit { border-color: var(--primary); box-shadow: 0 0 50px var(--primary); color: var(--primary); }
 
         button {
             padding: 16px 0; font-size: 17px; font-weight: 800; background: var(--primary); color: white; border: none; border-radius: 14px;
@@ -84,13 +82,15 @@
         }
         button:active { transform: scale(0.96); }
         button:disabled { background: #444; color: #888; box-shadow: none; cursor: not-allowed; }
-        button.share-btn { background: #00ff88; color: #003311; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3); }
+        button.channel-btn { background: #2AABEE; color: white; box-shadow: 0 4px 15px rgba(42, 171, 238, 0.3); }
         button.secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; box-shadow: none; font-size: 14px; margin-top: 15px; padding: 12px; }
 
+        /* ВЫБОР РЕЖИМА */
         .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; width: 95%; max-width: 340px; }
         .mode-btn { flex: 1; padding: 10px 5px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 11px; font-weight: bold; margin: 0; box-shadow: none; }
         .mode-btn.active-mode { background: var(--primary); color: white; border-color: var(--primary); }
 
+        /* НАСТРОЙКИ */
         .settings-panel { background: rgba(30,30,30,0.95); border: 1px solid #555; padding: 20px; border-radius: 15px; margin-bottom: 20px; width: 85%; max-width: 300px; display: none; z-index: 10; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
         input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); cursor: pointer; }
         
@@ -100,222 +100,776 @@
         .toggle-knob { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; }
         .toggle-switch.on .toggle-knob { left: 22px; }
 
+        /* ЛИДЕРБОРД */
         .leaderboard-box { background: rgba(0,0,0,0.3); width: 100%; max-height: 35vh; overflow-y: auto; border-radius: 16px; margin: 15px 0; }
         .leader-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .leader-name { font-size: 14px; font-weight: bold; color: #eee; text-align: left; }
+        .leader-name { font-size: 14px; font-weight: bold; display: block; color: #eee; text-align: left; }
+        .leader-date { font-size: 10px; color: #888; display: block; margin-top: 3px; text-align: left; }
         .leader-score { font-size: 18px; font-weight: bold; color: #fff; }
+        .leader-row:nth-child(1) .leader-name, .leader-row:nth-child(1) .leader-score { color: var(--accent); }
 
-        .shield-icon { font-size: 10px; color: #00ff88; margin-bottom: 10px; border: 1px solid #00ff88; padding: 4px 8px; border-radius: 20px; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
-        .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid var(--primary); text-align: center; width: 85%; max-width: 320px; }
+        .shield-icon { font-size: 10px; color: #00ff88; margin-bottom: 10px; border: 1px solid #00ff88; padding: 4px 8px; border-radius: 20px; align-self: flex-start; margin-top: 10px; }
+        .legal-checkbox-area { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; width: 90%; max-width: 300px; text-align: left; font-size: 11px; color: #aaa; }
+        .legal-link { color: var(--primary); text-decoration: underline; cursor: pointer; }
 
-        .graph-container { width: 100%; margin: 10px 0; background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px; box-sizing: border-box; }
-        canvas#staminaGraph { width: 100%; height: 80px; display: block; }
-
-        .calibration-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 300; flex-direction: column; justify-content: center; align-items: center; }
-        .calib-circle { width: 180px; height: 180px; border: 5px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; color: #00ff88; }
-        
-        .skins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .skin-card { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 10px; padding: 10px; cursor: pointer; position: relative; }
+        /* МАГАЗИН СКИНОВ */
+        .skins-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
+        .skin-card { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 10px; padding: 10px; cursor: pointer; position: relative; opacity: 0.5; }
+        .skin-card.unlocked { opacity: 1; border-color: #666; }
         .skin-card.active-skin { border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
+        .skin-color { width: 30px; height: 30px; border-radius: 50%; margin: 0 auto 5px; }
+        .skin-name { font-size: 12px; font-weight: bold; }
+        .lock-icon { font-size: 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; }
+
+        /* ОКНА */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
+        .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid var(--primary); text-align: center; width: 85%; max-width: 320px; max-height: 80vh; overflow-y: auto; }
+
+        /* КАЛИБРОВКА */
+        .calibration-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .calib-circle { width: 180px; height: 180px; border: 5px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; color: #00ff88; margin-bottom: 20px; background: rgba(0,255,136,0.1); }
+        .calib-progress { width: 80%; height: 4px; background: #333; margin-top: 20px; border-radius: 2px; }
+        .calib-bar { height: 100%; width: 0%; background: #00ff88; transition: width 1s linear; }
+        
+        /* УВЕДОМЛЕНИЕ (ТОСТ) */
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff88; z-index: 150; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+
+        .career-box { margin-bottom: 20px; padding: 10px; border-top: 1px solid #333; border-bottom: 1px solid #333; width: 100%; }
+        .career-text { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .career-num { font-size: 24px; color: #fff; font-weight: 900; }
+        .rank-badge { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; }
+        
+        .confetti { position: absolute; width: 10px; height: 10px; animation: fall linear forwards; z-index: 100; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+        
+        /* Вкладки лидерборда */
+        .leader-tabs { display: flex; width: 100%; margin-bottom: 10px; border-bottom: 1px solid #444; }
+        .leader-tab { flex: 1; padding: 10px; font-size: 10px; font-weight: bold; color: #666; cursor: pointer; }
+        .leader-tab.active-tab { color: #ff0055; border-bottom: 2px solid #ff0055; }
+        .leader-tab.survival-tab.active-tab { color: #ffcc00; border-bottom: 2px solid #ffcc00; }
+        .leader-tab.rhythm-tab.active-tab { color: #00ff88; border-bottom: 2px solid #00ff88; }
+        
+        /* Профиль */
+        .player-profile { width: 80%; text-align: left; margin-bottom: 15px; border: 1px solid #444; border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.05); }
+        .player-name-label { font-size: 10px; color: #888; }
+        .player-name-val { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .edit-link { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; float: right; }
     </style>
 </head>
 <body>
 
+    <!-- ОКНО КАЛИБРОВКИ (30 СЕК) -->
     <div id="calibModal" class="calibration-overlay">
-        <h2 style="color:white;">🥊 БЕЙ ПО МЯЧУ!</h2>
-        <p style="color:#aaa; font-size:14px;">Набивай 30 секунд для настройки.</p>
+        <h2 style="color:white; margin-bottom:5px;">🥊 БЕЙ ПО МЯЧУ!</h2>
+        <p style="color:#aaa; max-width:80%; font-size:14px; margin-bottom:20px;">Набивай в обычном ритме 30 секунд.<br>Мы настроим микрофон под твой удар.</p>
         <div class="calib-circle" id="calibTimer">30</div>
-        <div style="width:80%; height:4px; background:#333; margin-top:20px;"><div id="calibBar" style="height:100%; width:0%; background:#00ff88;"></div></div>
+        <div class="calib-progress"><div class="calib-bar" id="calibBar"></div></div>
+        <p style="color:#666; font-size:12px; margin-top:15px;">Анализ шума и ударов...</p>
     </div>
+    
+    <!-- ТОСТ -->
+    <div id="toast" class="toast">📢 Новое место? Сделай калибровку в настройках!</div>
 
-    <div id="comboPopup" class="combo-popup"></div>
-
-    <div id="screen-login" class="screen active">
-        <h1>BOXBALL</h1>
-        <div style="margin-bottom:20px; border-top:1px solid #333; padding:10px;">
-            <div style="font-size:11px; color:#666;">Всего ударов</div>
-            <div style="font-size:24px; font-weight:900;" id="totalHitsLogin">0</div>
+    <!-- ОКНО ОТЗЫВА -->
+    <div id="reviewModal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="font-size: 24px; margin-bottom: 10px;">🎉 НОВЫЙ РЕКОРД!</div>
+            <div style="color: #ccc; font-size: 14px; margin-bottom: 20px;">
+                Ты машина! 🤖<br>Помоги нам стать лучше — оставь отзыв.
+            </div>
+            <p style="font-size:12px; color:#888; margin-bottom:5px;">ВЫБЕРИ СВОЙ НАБОР:</p>
+            <button onclick="openReviewLink(WB_URL_SINGLE)" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ МЯЧ 60гр (1шт)</button>
+            <button onclick="openReviewLink(WB_URL_SET)" style="background: var(--accent); color: #000; margin-bottom: 10px;">⭐️ НАБОР (3шт)</button>
+            <button onclick="document.getElementById('reviewModal').style.display='none'" style="background: transparent; border: 1px solid #555;">ПОЗЖЕ</button>
         </div>
-        <input type="text" id="passInput" placeholder="4 ЦИФРЫ" style="padding:15px; border-radius:12px; background:#222; color:white; border:1px solid #444; width:80%; text-align:center; margin-bottom:15px;">
-        <button onclick="checkCode()">ВОЙТИ</button>
     </div>
 
+    <!-- ОКНО ТЕМ (МАГАЗИН) -->
+    <div id="skinsModal" class="modal-overlay">
+        <div class="modal-content" style="border-color: #fff;">
+            <h3>🎨 ВЫБЕРИ СТИЛЬ</h3>
+            <p style="font-size:12px; color:#888;">Набивай удары, чтобы открыть новые цвета!</p>
+            <div class="skins-grid" id="skinsGrid"></div>
+            <button onclick="document.getElementById('skinsModal').style.display='none'" style="margin-top:15px; background: #333;">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
+    <!-- 1. ВХОД -->
+    <div id="screen-login" class="screen active">
+        <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">HIGH GAIN PEAK</p>
+        
+        <div class="career-box">
+            <div class="career-text">Всего ударов</div>
+            <div class="career-num" id="totalHitsLogin">0</div>
+        </div>
+
+        <input type="text" id="passInput" placeholder="4 ЦИФРЫ ПОД ШТРИХКОДОМ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:16px; margin-bottom:15px; width:80%;">
+        <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
+        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433, 0309 или 5528</p>
+        
+        <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
+            © 2026 BOXBALL RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
+        </div>
+    </div>
+
+    <!-- 2. ИГРА -->
     <div id="screen-game" class="screen">
         <div class="mode-selector">
             <button class="mode-btn active-mode" id="btnSprint" onclick="setMode('sprint')">⚡️ СПРИНТ</button>
             <button class="mode-btn" id="btnSurvival" onclick="setMode('survival')">💀 ВЫЖИВАНИЕ</button>
             <button class="mode-btn" id="btnRhythm" onclick="setMode('rhythm')">🎵 РИТМ</button>
         </div>
-        <div style="display:flex; justify-content:space-between; width:90%; align-items:center;">
-            <div id="timer" style="font-size:42px; font-weight:bold;">60</div>
-            <div onclick="toggleSettings()" style="cursor:pointer; font-size:12px; color:#aaa;">⚙️ Настройки</div>
-        </div>
 
+        <div style="display:flex; justify-content:space-between; width:90%; align-items: center; margin-bottom: 5px;">
+            <div style="background:rgba(255,255,255,0.1); padding:8px 25px; border-radius:20px; font-weight:bold; color:#fff; font-size: 42px; min-width: 110px;" id="timer">60</div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <div class="shield-icon" style="margin:0 0 5px 0;">🛡️ ANTI-CHEAT</div>
+                <div style="font-size:12px; color:#aaa; cursor:pointer; border-bottom:1px dashed #555;" onclick="toggleSettings()">⚙️ Настройки</div>
+            </div>
+        </div>
+        
+        <!-- ПАНЕЛЬ НАСТРОЕК -->
         <div class="settings-panel" id="settingsPanel">
-            <h3>НАСТРОЙКИ</h3>
-            <button onclick="startAutoCalibration()" style="background:#00ff88; color:#004422;">🪄 КАЛИБРОВКА</button>
-            <label style="font-size:12px; color:#ccc;">Порог: <span id="sensVal">6</span></label>
+            <h3 style="margin-top:0; font-size:14px; margin-bottom:15px;">НАСТРОЙКИ</h3>
+            
+            <div class="toggle-row">
+                <span>🔊 Звук</span>
+                <div class="toggle-switch on" id="togSound" onclick="toggleOption('sound')"><div class="toggle-knob"></div></div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid #444; margin: 15px 0;">
+
+            <!-- КНОПКА КАЛИБРОВКИ -->
+            <button onclick="startAutoCalibration()" style="background: linear-gradient(90deg, #00ff88, #00cc6a); color: #004422; margin-bottom: 15px; font-weight:bold;">🪄 КАЛИБРОВКА (30 сек)</button>
+            
+            <label style="font-size:12px; color:#ccc;">Порог (Ручной): <span id="sensVal">6</span></label>
             <input type="range" id="sensRange" min="2" max="100" value="6" oninput="updateSens(this.value)">
-            <button onclick="openSkins()" style="background:#FFD700; color:black;">🎨 ТЕМЫ</button>
-            <button onclick="toggleSettings()" style="background:#222;">ЗАКРЫТЬ</button>
+            
+            <!-- КНОПКА СБРОСА -->
+            <button onclick="setRecommended()" style="background: #333; border: 1px solid #666; color: #ccc; padding: 10px; font-size: 12px; width: 100%; margin-bottom: 5px;">Сброс на 6</button>
+            
+            <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
+            
+            <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; margin-bottom: 5px;">🚪 Выйти</button>
+            <button onclick="toggleSettings()" style="margin-top:5px; padding:10px; font-size:12px; background:#222; border:1px solid #444;">ЗАКРЫТЬ</button>
         </div>
-
+        
         <div class="score-circle" id="scoreDisplay">0</div>
-        <div class="volume-meter"><div class="volume-bar" id="micLevel"></div><div class="volume-threshold" id="micThresh"></div></div>
-        <div class="last-hit-info">ПИК: <span id="lastHitVal" style="color:#00ff88;">0</span></div>
-        <button id="startBtn">НАЧАТЬ</button>
-    </div>
-
-    <div id="screen-save" class="screen">
-        <div class="rank-badge" id="rankDisplay" style="color:var(--accent); font-weight:800;">НОВИЧОК</div>
-        <h1 id="finalScore" style="font-size:80px; margin:10px 0;">0</h1>
-        <div class="graph-container"><canvas id="staminaGraph"></canvas></div>
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <div style="background:rgba(255,255,255,0.1); padding:8px; border-radius:8px;">🔥 <span id="resCalories">0</span> ККАЛ</div>
+        
+        <!-- ВИЗУАЛИЗАТОР ГРОМКОСТИ -->
+        <div class="volume-meter">
+            <div class="volume-bar" id="micLevel"></div>
+            <div class="volume-threshold" id="micThresh"></div>
         </div>
-        <input type="text" id="nicknameInput" placeholder="Твое Имя" style="padding:15px; border-radius:12px; background:#222; color:white; width:80%; text-align:center; margin-bottom:10px;">
-        <button id="saveBtn" onclick="saveScore()">СОХРАНИТЬ</button>
-        <button class="share-btn" onclick="shareChallenge()">🚀 БРОСИТЬ ВЫЗОВ</button>
+        <div class="last-hit-info">
+            ПИК: <span id="lastHitVal" style="color:#00ff88; font-weight:bold;">0</span>
+        </div>
+        
+        <div style="color:#666; font-size:12px; margin-top:5px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
+
+        <button id="startBtn">НАЧАТЬ РАУНД</button>
+        <button onclick="showLeaderboard(true)" class="secondary-btn">🏆 ТАБЛИЦА ЛИДЕРОВ</button>
     </div>
 
-    <div id="skinsModal" class="modal-overlay"><div class="modal-content"><h3>🎨 ТЕМЫ</h3><div class="skins-grid" id="skinsGrid"></div><button onclick="document.getElementById('skinsModal').style.display='none'">ЗАКРЫТЬ</button></div></div>
-    <div id="reviewModal" class="modal-overlay"><div class="modal-content"><h3>🎉 РЕКОРД!</h3><p>Оставь отзыв на WB:</p><button onclick="openReviewLink(WB_URL_SINGLE)">МЯЧ 1ШТ</button><button onclick="openReviewLink(WB_URL_SET)">НАБОР 3ШТ</button></div></div>
+    <!-- 3. РЕЗУЛЬТАТ -->
+    <div id="screen-save" class="screen">
+        <div style="font-size:14px; color:#aaa;">ВАШ РЕЗУЛЬТАТ</div>
+        <div class="rank-badge" id="rankDisplay">НОВИЧОК</div>
+        <h1 style="font-size:80px; margin:0; color:var(--primary);" id="finalScore">0</h1>
+        <div style="font-size:12px; color:var(--accent); font-weight:bold; margin-bottom:10px;" id="recordMsg"></div>
+
+        <div style="display:flex; gap:15px; justify-content:center; margin-bottom:15px;">
+            <div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:5px;">🔥 <span id="resCalories">0</span> ККАЛ</div>
+            <div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:5px;">🎮 <span id="resMode">СПРИНТ</span></div>
+        </div>
+        
+        <!-- БЛОК С ИМЕНЕМ (ПЕРЕКЛЮЧАЕМЫЙ) -->
+        <div id="nameInputArea">
+            <input type="text" id="nicknameInput" placeholder="Ваше Имя" maxlength="15" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%; margin-bottom: 10px;">
+        </div>
+        
+        <div id="nameDisplayArea" style="display:none;" class="player-profile">
+            <div class="player-name-label">Игрок: <span class="edit-link" onclick="editName()">(изм.)</span></div>
+            <div class="player-name-val" id="displayName">Аноним</div>
+        </div>
+        
+        <div class="legal-checkbox-area">
+            <input type="checkbox" id="legalCheck" onchange="toggleSaveBtn()">
+            <label for="legalCheck">Я согласен на <span class="legal-link" onclick="openPolicy()">обработку данных</span></label>
+        </div>
+
+        <button id="saveBtn" onclick="saveScore()" disabled>СОХРАНИТЬ В ТОП</button>
+    </div>
+
+    <!-- 4. ЛИДЕРЫ -->
+    <div id="screen-leaders" class="screen">
+        <h3>ТАБЛИЦА ЛИДЕРОВ</h3>
+        <div class="leader-tabs">
+            <div class="leader-tab active-tab" id="tabSprint" onclick="switchLeaderTab('sprint')">⚡️ СПРИНТ</div>
+            <div class="leader-tab" id="tabSurvival" onclick="switchLeaderTab('survival')">💀 ВЫЖИВАНИЕ</div>
+            <div class="leader-tab" id="tabRhythm" onclick="switchLeaderTab('rhythm')">🎵 РИТМ</div>
+        </div>
+        <div class="leaderboard-box" id="leaderList"><div style="padding:20px;">Загрузка...</div></div>
+        <button id="leaderBackBtn" onclick="location.reload()" style="background: #333;">ИГРАТЬ СНОВА</button>
+    </div>
 
     <script>
-        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (ТОЧНОСТЬ ИЗ V1) ---
-        const MIN_HIT_DELAY = 120; 
-        let SENSITIVITY = 6;
+        const MIN_HIT_DELAY = 120; // 0.12 сек задержка
+        let SENSITIVITY = 6; // ДЕФОЛТ 6
+        
         let score = 0, isRunning = false, lastHitTime = 0;
-        let currentMode = 'sprint', timeLeft = 60, totalHits = 0;
-        let audioCtx, timerInterval, hitTimestamps = [], comboCount = 0, lastComboTime = 0;
-        let isSoundOn = true, currentTheme = 'default';
+        let currentMode = 'sprint'; 
+        let timeLeft = 60.0;
+        let audioCtx;
+        const synth = window.speechSynthesis;
+        let timerInterval;
+        let metronomeInterval;
+        let totalHits = 0;
+        let personalBest = 0;
+        
+        // ФЛАГ ГОТОВНОСТИ
+        let isReadyForHit = true;
+        
+        // НАСТРОЙКИ
+        let isSoundOn = true;
+        let currentTheme = 'default';
 
+        // ТЕМЫ
         const THEMES = {
-            'default': { color: '#ff0055', bg1: '#1a0b0b', bg2: '#000000', cost: 0 },
-            'cyber': { color: '#00ccff', bg1: '#0b1a1a', bg2: '#000000', cost: 500 },
-            'toxic': { color: '#00ff88', bg1: '#0b1a0b', bg2: '#000000', cost: 1000 },
-            'gold': { color: '#FFD700', bg1: '#1a1500', bg2: '#000000', cost: 5000 }
+            'default': { name: 'Неон (Стандарт)', color: '#ff0055', bg1: '#1a0b0b', bg2: '#000000', cost: 0 },
+            'cyber': { name: 'Кибер (500 уд.)', color: '#00ccff', bg1: '#0b1a1a', bg2: '#000000', cost: 500 },
+            'toxic': { name: 'Токсик (1к уд.)', color: '#00ff88', bg1: '#0b1a0b', bg2: '#000000', cost: 1000 },
+            'gold': { name: 'ЭЛИТА (5к уд.)', color: '#FFD700', bg1: '#1a1500', bg2: '#000000', cost: 5000 }
         };
 
         window.onload = function() {
-            if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.expand();
-            totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
-            document.getElementById('totalHitsLogin').innerText = totalHits;
+            if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
+            
             const savedSens = localStorage.getItem('box_sens');
-            if(savedSens) updateSens(savedSens);
-            if(localStorage.getItem('box_auth') === 'true') showScreen('screen-game');
+            if(savedSens) { 
+                updateSens(savedSens); 
+            } else {
+                updateSens(6); // СТАРТ 6
+            }
+
+            totalHits = parseInt(localStorage.getItem('box_total_hits')) || 0;
+            document.getElementById('totalHitsLogin').innerText = totalHits.toLocaleString();
+            personalBest = parseInt(localStorage.getItem('box_pb_sprint')) || 0;
+            
+            if(localStorage.getItem('box_sound') === 'false') toggleOption('sound');
+            
+            const savedTheme = localStorage.getItem('box_theme');
+            if(savedTheme && THEMES[savedTheme]) applyTheme(savedTheme);
+
+            if (localStorage.getItem('box_auth') === 'true') {
+                showScreen('screen-game');
+                showToast(); 
+            }
         };
+        
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 4000);
+        }
+
+        // --- АВТО-КАЛИБРОВКА (30 СЕК) ---
+        async function startAutoCalibration() {
+            document.getElementById('settingsPanel').style.display = 'none';
+            document.getElementById('calibModal').style.display = 'flex';
+            
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                
+                const constraints = {
+                    audio: {
+                        echoCancellation: false,
+                        autoGainControl: false,
+                        noiseSuppression: false,
+                        latency: 0
+                    }
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // УСИЛИТЕЛЬ
+                const mic = audioCtx.createMediaStreamSource(stream); 
+                const preamp = audioCtx.createGain();
+                preamp.gain.value = 5.0; // 5x
+                
+                // ФИЛЬТР
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 180;
+                
+                const analyser = audioCtx.createAnalyser(); 
+                const script = audioCtx.createScriptProcessor(2048, 1, 1);
+                const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
+                
+                // ЦЕПОЧКА
+                mic.connect(preamp);
+                preamp.connect(filter);
+                filter.connect(analyser);
+                analyser.connect(script);
+                script.connect(zeroGain);
+                zeroGain.connect(audioCtx.destination);
+                
+                let calibrationSamples = [];
+                let timeLeft = 30;
+                
+                const countInt = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('calibTimer').innerText = timeLeft;
+                    document.getElementById('calibBar').style.width = ((30 - timeLeft) / 30 * 100) + "%";
+                    if(timeLeft <= 0) clearInterval(countInt);
+                }, 1000);
+
+                script.onaudioprocess = function() {
+                    const buf = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteTimeDomainData(buf);
+                    
+                    // PEAK
+                    let maxVal = 0;
+                    for (let i = 0; i < buf.length; i++) {
+                        let x = Math.abs(buf[i] - 128);
+                        if (x > maxVal) maxVal = x;
+                    }
+                    calibrationSamples.push(maxVal);
+                };
+
+                setTimeout(() => {
+                    script.disconnect();
+                    mic.disconnect();
+                    preamp.disconnect();
+                    filter.disconnect();
+                    
+                    if (calibrationSamples.length > 0) {
+                        let sumAll = calibrationSamples.reduce((a, b) => a + b, 0);
+                        let avgLevel = sumAll / calibrationSamples.length;
+                        
+                        calibrationSamples.sort((a, b) => a - b);
+                        let peakLevel = calibrationSamples[Math.floor(calibrationSamples.length * 0.9)]; 
+                        
+                        let newSens = avgLevel + (peakLevel - avgLevel) * 0.3;
+                        if(newSens < 3) newSens = 3;
+                        if(newSens > 60) newSens = 60;
+                        
+                        let finalSens = Math.floor(newSens);
+                        updateSens(finalSens);
+                        alert(`Калибровка завершена!\nФон: ${Math.floor(avgLevel)}, Пик: ${peakLevel}\nПорог: ${finalSens}`);
+                    }
+                    document.getElementById('calibModal').style.display = 'none';
+                }, 30000); 
+
+            } catch (e) {
+                alert("Ошибка: Разрешите микрофон!");
+                document.getElementById('calibModal').style.display = 'none';
+            }
+        }
+
+        // --- ТЕМЫ ---
+        function openSkins() {
+            const grid = document.getElementById('skinsGrid');
+            grid.innerHTML = '';
+            for (const [key, theme] of Object.entries(THEMES)) {
+                const locked = totalHits < theme.cost;
+                const active = currentTheme === key ? 'active-skin' : '';
+                const lockIcon = locked ? '<div class="lock-icon">🔒</div>' : '';
+                const opacity = locked ? '0.5' : '1';
+                grid.innerHTML += `
+                <div class="skin-card ${active}" style="opacity:${opacity}" onclick="selectTheme('${key}', ${theme.cost})">
+                    <div class="skin-color" style="background:${theme.color}"></div>
+                    <div class="skin-name">${theme.name}</div>
+                    ${lockIcon}
+                </div>`;
+            }
+            document.getElementById('settingsPanel').style.display = 'none';
+            document.getElementById('skinsModal').style.display = 'flex';
+        }
+
+        function selectTheme(key, cost) {
+            if (totalHits < cost) {
+                alert(`Нужно набрать ${cost} ударов! У тебя пока ${totalHits}.`);
+                return;
+            }
+            applyTheme(key);
+            document.getElementById('skinsModal').style.display = 'none';
+        }
+
+        function applyTheme(key) {
+            currentTheme = key;
+            localStorage.setItem('box_theme', key);
+            const t = THEMES[key];
+            const root = document.documentElement;
+            root.style.setProperty('--primary', t.color);
+            root.style.setProperty('--bg-grad-start', t.bg1);
+            root.style.setProperty('--bg-grad-end', t.bg2);
+        }
+
+        // --- НАСТРОЙКИ ---
+        function toggleOption(opt) {
+            const el = document.getElementById('togSound');
+            const isOn = el.classList.contains('on');
+            if(isOn) {
+                el.classList.remove('on');
+                isSoundOn = false;
+            } else {
+                el.classList.add('on');
+                isSoundOn = true;
+            }
+            localStorage.setItem('box_sound', !isOn);
+        }
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-        function checkCode() { if(VALID_CODES.includes(document.getElementById('passInput').value)) { localStorage.setItem('box_auth', 'true'); showScreen('screen-game'); } }
-        function updateSens(val) { SENSITIVITY = parseInt(val); document.getElementById('sensVal').innerText = val; document.getElementById('micThresh').style.left = Math.min((val/64)*100, 100) + "%"; localStorage.setItem('box_sens', val); }
-        function toggleSettings() { const s = document.getElementById('settingsPanel'); s.style.display = s.style.display === 'block' ? 'none' : 'block'; }
-
-        // --- ГИБРИДНЫЙ ДВИЖОК АУДИО (ТОЧНОСТЬ V1 + ФИЧИ V2) ---
-        async function setupAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') await audioCtx.resume();
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false } });
-            const mic = audioCtx.createMediaStreamSource(stream);
-            const preamp = audioCtx.createGain(); preamp.gain.value = 5.0;
+        
+        function checkCode() { 
+            const val = document.getElementById('passInput').value.trim();
+            if(VALID_CODES.includes(val)) { 
+                localStorage.setItem('box_auth', 'true'); 
+                showScreen('screen-game'); 
+                showToast(); 
+            } 
+            else { document.getElementById('errorMsg').style.display = 'block'; }
+        }
+        
+        function logout() { localStorage.removeItem('box_auth'); location.reload(); }
+        
+        function checkSavedName() {
+            const savedName = localStorage.getItem('box_username');
+            if(savedName) {
+                document.getElementById('nameInputArea').style.display = 'none';
+                document.getElementById('nameDisplayArea').style.display = 'block';
+                document.getElementById('displayName').innerText = savedName;
+            } else {
+                document.getElementById('nameInputArea').style.display = 'block';
+                document.getElementById('nameDisplayArea').style.display = 'none';
+            }
+        }
+        
+        function editName() {
+            document.getElementById('nameInputArea').style.display = 'block';
+            document.getElementById('nameDisplayArea').style.display = 'none';
+        }
+        
+        function toggleSaveBtn() { document.getElementById('saveBtn').disabled = !document.getElementById('legalCheck').checked; }
+        function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
+        function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
+        
+        function updateSens(val) { 
+            SENSITIVITY = parseInt(val); 
+            document.getElementById('sensVal').innerText = SENSITIVITY; 
+            document.getElementById('sensRange').value = SENSITIVITY;
             
-            // ВОЗВРАЩАЕМ ФИЛЬТР ИЗ V1
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.value = 180;
-
-            const analyser = audioCtx.createAnalyser();
-            const script = audioCtx.createScriptProcessor(2048, 1, 1);
-            mic.connect(preamp); preamp.connect(filter); filter.connect(analyser); analyser.connect(script);
-            script.connect(audioCtx.destination);
-            return { script, analyser };
+            // Визуализация для пикового режима (0-128)
+            // Полоска 100% при 64
+            const percent = Math.min((SENSITIVITY / 64) * 100, 100);
+            document.getElementById('micThresh').style.left = percent + "%";
+            
+            localStorage.setItem('box_sens', SENSITIVITY); 
+        }
+        
+        function setRecommended() { updateSens(6); } 
+        function openChannel() { window.Telegram.WebApp.openTelegramLink(CHANNEL_URL); }
+        
+        function openReviewLink(url) { 
+            window.Telegram.WebApp.openLink(url); 
+            document.getElementById('reviewModal').style.display = 'none'; 
+        }
+        
+        function speak(text) { 
+            if (!isSoundOn || synth.speaking) return; 
+            const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; u.rate = 1.2; synth.speak(u); 
         }
 
-        document.getElementById('startBtn').onclick = async function() {
+        function setMode(mode) {
             if(isRunning) return;
-            const { script, analyser } = await setupAudio();
-            isRunning = true; score = 0; hitTimestamps = []; comboCount = 0;
-            timeLeft = currentMode === 'survival' ? 10 : 60;
-            document.getElementById('startBtn').style.display = 'none';
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.className = 'mode-btn');
+            
+            if(mode === 'sprint') {
+                document.getElementById('btnSprint').className += ' active-mode';
+                document.getElementById('timer').innerText = "60";
+                document.getElementById('modeHint').innerText = "НАБЕЙ МАКСИМУМ ЗА 60 СЕК";
+                document.getElementById('timer').style.color = "#fff";
+            } else if (mode === 'survival') {
+                document.getElementById('btnSurvival').className += ' active-mode';
+                document.getElementById('timer').innerText = "10";
+                document.getElementById('modeHint').innerText = "УСКОРЯЙСЯ, ЧТОБЫ ВЫЖИТЬ!";
+                document.getElementById('timer').style.color = "#ffcc00";
+            } else if (mode === 'rhythm') {
+                document.getElementById('btnRhythm').className += ' active-mode';
+                document.getElementById('timer').innerText = "60";
+                document.getElementById('modeHint').innerText = "БЕЙ В ТАКТ МЕТРОНОМА";
+                document.getElementById('timer').style.color = "#00ff88";
+            }
+        }
 
-            timerInterval = setInterval(() => {
-                timeLeft--; document.getElementById('timer').innerText = Math.floor(timeLeft);
-                if(timeLeft <= 0) { clearInterval(timerInterval); isRunning = false; finishGame(); script.disconnect(); }
-            }, 1000);
+        function playSound(type) {
+            if (!isSoundOn) return;
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if (type === 'hit') {
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime+0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.1);
+                osc.start(); osc.stop(audioCtx.currentTime+0.1);
+            } else if (type === 'tick') {
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.05);
+                osc.type = 'square'; osc.start(); osc.stop(audioCtx.currentTime+0.05);
+            } else {
+                osc.frequency.value = 200; gain.gain.setValueAtTime(0.5, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1.5);
+                osc.start(); osc.stop(audioCtx.currentTime+1.5);
+            }
+        }
 
-            script.onaudioprocess = () => {
-                if(!isRunning) return;
-                const buf = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteTimeDomainData(buf);
-                let max = 0; for(let i=0; i<buf.length; i++) { let x = Math.abs(buf[i]-128); if(x>max) max=x; }
-                document.getElementById('micLevel').style.width = Math.min((max/64)*100, 100) + "%";
-                document.getElementById('lastHitVal').innerText = max;
+        function launchConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            for(let i=0; i<30; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random()*100 + 'vw';
+                c.style.background = colors[Math.floor(Math.random()*colors.length)];
+                c.style.animationDuration = (Math.random()*2+2) + 's';
+                document.body.appendChild(c);
+                setTimeout(()=>c.remove(), 4000);
+            }
+        }
 
-                if(max > SENSITIVITY && Date.now() - lastHitTime > MIN_HIT_DELAY) {
-                    score++; lastHitTime = Date.now();
-                    registerHit();
+        const startBtn = document.getElementById('startBtn');
+        startBtn.addEventListener('click', async () => {
+            if(isRunning) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                
+                // ВАЖНО: СЫРОЙ ЗВУК
+                const constraints = {
+                    audio: {
+                        echoCancellation: false,
+                        autoGainControl: false,
+                        noiseSuppression: false,
+                        latency: 0
+                    }
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // 1. УСИЛИТЕЛЬ
+                const mic = audioCtx.createMediaStreamSource(stream); 
+                const preamp = audioCtx.createGain();
+                preamp.gain.value = 5.0; // x5 УСИЛЕНИЕ
+                
+                // 2. ФИЛЬТР (Срезаем голос и свист)
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 180;
+                
+                const analyser = audioCtx.createAnalyser(); 
+                const script = audioCtx.createScriptProcessor(2048, 1, 1);
+                
+                const zeroGain = audioCtx.createGain(); zeroGain.gain.value = 0.0;
+                
+                // ЦЕПОЧКА: MIC -> PREAMP -> FILTER -> ANALYSER
+                mic.connect(preamp);
+                preamp.connect(filter);
+                filter.connect(analyser);
+                analyser.connect(script);
+                script.connect(zeroGain);
+                zeroGain.connect(audioCtx.destination);
+                
+                startBtn.style.display = 'none'; document.getElementById('settingsPanel').style.display = 'none';
+                document.querySelector('.mode-selector').style.opacity = '0.3';
+                document.querySelector('.secondary-btn').style.display = 'none'; 
+                
+                isRunning = true; score = 0; document.getElementById('scoreDisplay').innerText = 0; 
+                timeLeft = (currentMode === 'survival') ? 10 : 60;
+                document.getElementById('timer').innerText = timeLeft;
+                isReadyForHit = true; 
+
+                if (timerInterval) clearInterval(timerInterval);
+                if (metronomeInterval) clearInterval(metronomeInterval);
+
+                if(currentMode === 'rhythm') {
+                    playSound('tick');
+                    metronomeInterval = setInterval(() => { if(isRunning) playSound('tick'); }, 600);
                 }
-            };
-        };
 
-        function registerHit() {
-            // Telegram Вибрация
-            if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                timerInterval = setInterval(() => { 
+                    timeLeft -= 1; document.getElementById('timer').innerText = Math.floor(timeLeft); 
+                    if(timeLeft <= 0) { 
+                        clearInterval(timerInterval); if(metronomeInterval) clearInterval(metronomeInterval);
+                        isRunning = false; finishGame(); 
+                    } 
+                }, 1000);
+
+                // --- АЛГОРИТМ PEAK ---
+                script.onaudioprocess = function() {
+                    if(!isRunning) return;
+                    
+                    const buf = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteTimeDomainData(buf);
+                    
+                    // ИЩЕМ МАКСИМАЛЬНЫЙ ПИК
+                    let maxVal = 0;
+                    for (let i = 0; i < buf.length; i++) {
+                        let x = Math.abs(buf[i] - 128);
+                        if (x > maxVal) maxVal = x;
+                    }
+                    let val = maxVal; 
+
+                    // ВИЗУАЛИЗАЦИЯ (Масштабируем 0-64 -> 0-100%)
+                    const visual = Math.min((val / 64) * 100, 100);
+                    const barEl = document.getElementById('micLevel');
+                    barEl.style.width = visual + "%";
+                    
+                    document.getElementById('lastHitVal').innerText = val;
+
+                    // УДАР?
+                    if (isReadyForHit && val > SENSITIVITY) {
+                        const now = Date.now();
+                        // 120мс между ударами
+                        if(now - lastHitTime > MIN_HIT_DELAY) {
+                            score++; 
+                            registerHitVisual();
+                            lastHitTime = now;
+                            
+                            // Визуальный отклик полоски
+                            barEl.classList.add('hit-detected');
+                            setTimeout(() => barEl.classList.remove('hit-detected'), 100);
+                        }
+                    }
+                }
+            } catch(e) { alert("Ошибка: Разрешите микрофон!"); }
+        });
+
+        function registerHitVisual() {
+            const el = document.getElementById('scoreDisplay'); el.innerText = score; 
+            el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 300);
+
+            if (currentMode === 'survival') {
+                el.classList.add('hit-survival');
+                let bonus = 1.0; if (score > 20) bonus = 0.5; if (score > 50) bonus = 0.25;
+                timeLeft += bonus; if (timeLeft > 10) timeLeft = 10;
+                document.getElementById('timer').innerText = Math.floor(timeLeft);
+            } else { 
+                el.classList.add('hit'); 
+            }
             
-            const el = document.getElementById('scoreDisplay'); el.innerText = score;
-            el.classList.add('shake', 'hit'); setTimeout(() => el.classList.remove('shake', 'hit'), 200);
-            hitTimestamps.push(Date.now());
+            setTimeout(()=>el.className = 'score-circle', 100);
+            playSound('hit'); 
+        }
 
-            // Комбо
-            const now = Date.now();
-            if(now - lastComboTime < 2000) {
-                comboCount++;
-                if(comboCount % 10 === 0) showCombo(comboCount);
-            } else comboCount = 1;
-            lastComboTime = now;
+        function finishGame() { 
+            isRunning = false; playSound('end'); launchConfetti();
             
-            if(currentMode === 'survival') { timeLeft = Math.min(timeLeft + 1, 10); }
-            playSound('hit');
+            const cals = Math.floor(score * 0.05); 
+            let rank = "НОВИЧОК";
+            if(score > 30) rank = "ЛЮБИТЕЛЬ";
+            if(score > 60) rank = "БОЕЦ";
+            if(score > 100) rank = "МАШИНА";
+            if(score > 150) rank = "ЛЕГЕНДА";
+
+            totalHits += score;
+            localStorage.setItem('box_total_hits', totalHits);
+
+            document.getElementById('finalScore').innerText = score; 
+            document.getElementById('resCalories').innerText = cals;
+            document.getElementById('resMode').innerText = currentMode.toUpperCase();
+            document.getElementById('rankDisplay').innerText = rank;
+            
+            personalBest = parseInt(localStorage.getItem('box_pb_' + currentMode)) || 0;
+            if (score > personalBest && score > 10) {
+                localStorage.setItem('box_pb_' + currentMode, score);
+                document.getElementById('recordMsg').innerText = "🏆 НОВЫЙ ЛИЧНЫЙ РЕКОРД!";
+                document.getElementById('reviewModal').style.display = 'flex';
+            } else {
+                document.getElementById('recordMsg').innerText = "";
+            }
+
+            document.querySelector('.mode-selector').style.opacity = '1';
+            document.getElementById('legalCheck').checked = false;
+            
+            checkSavedName(); 
+            toggleSaveBtn(); 
+            showScreen('screen-save'); 
+        }
+        
+        function saveScore() {
+            let name = "";
+            const savedName = localStorage.getItem('box_username');
+            
+            if (savedName && document.getElementById('nameDisplayArea').style.display !== 'none') {
+                name = savedName;
+            } else {
+                name = document.getElementById('nicknameInput').value.trim();
+                if(name.length < 2) { alert("Введите имя!"); return; }
+                localStorage.setItem('box_username', name); 
+            }
+
+            const btn = document.querySelector('#screen-save button');
+            btn.innerText = "ОТПРАВКА..."; btn.disabled = true;
+            fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ name: name, score: score, mode: currentMode, date: new Date().toLocaleDateString() }) }).then(() => showLeaderboard(false, currentMode)).catch(() => showLeaderboard(false, currentMode));
         }
 
-        function showCombo(c) {
-            const p = document.getElementById('comboPopup'); p.innerText = "МОЩЬ! " + c + "x";
-            p.classList.remove('combo-pop-anim'); void p.offsetWidth; p.classList.add('combo-pop-anim');
+        function switchLeaderTab(mode) {
+            document.querySelectorAll('.leader-tab').forEach(t => t.className = 'leader-tab');
+            document.getElementById('tab' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active-tab');
+            fetchLeaderboardData(mode);
         }
 
-        function finishGame() {
-            totalHits += score; localStorage.setItem('box_total_hits', totalHits);
-            document.getElementById('finalScore').innerText = score;
-            document.getElementById('resCalories').innerText = Math.floor(score * 0.05);
-            drawGraph();
-            showScreen('screen-save');
+        function showLeaderboard(fromMenu = false, initialMode = 'sprint') {
+            showScreen('screen-leaders');
+            const backBtn = document.getElementById('leaderBackBtn');
+            if(fromMenu) {
+                backBtn.innerText = "НАЗАД В МЕНЮ";
+                backBtn.onclick = function() { showScreen('screen-game'); };
+            } else {
+                backBtn.innerText = "ИГРАТЬ СНОВА";
+                backBtn.onclick = function() { location.reload(); };
+            }
+            switchLeaderTab(initialMode);
         }
 
-        function drawGraph() {
-            const canvas = document.getElementById('staminaGraph'); const ctx = canvas.getContext('2d');
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            if(!hitTimestamps.length) return;
-            const buckets = new Array(12).fill(0); const start = hitTimestamps[0];
-            hitTimestamps.forEach(t => { const idx = Math.floor((t-start)/5000); if(idx<12) buckets[idx]++; });
-            const max = Math.max(...buckets, 1);
-            buckets.forEach((h, i) => {
-                const bh = (h/max)*60; ctx.fillStyle = '#00ff88'; ctx.fillRect(i*25, 80-bh, 20, bh);
+        function fetchLeaderboardData(mode) {
+            const list = document.getElementById('leaderList'); 
+            list.innerHTML = "<div style='padding:20px'>Загрузка...</div>";
+            fetch(GOOGLE_SCRIPT_URL + "?mode=" + mode)
+            .then(r=>r.json())
+            .then(data => {
+                list.innerHTML = "";
+                if(!data.length) list.innerHTML = "<div style='padding:20px'>Пока пусто</div>";
+                data.forEach((row, i) => {
+                    let dateStr = row.date ? row.date : ''; 
+                    list.innerHTML += `
+                    <div class="leader-row">
+                        <div class="leader-left">
+                            <span class="leader-name">#${i+1} ${row.name}</span>
+                            <span class="leader-date">${dateStr}</span>
+                        </div>
+                        <span class="leader-score">${row.score}</span>
+                    </div>`;
+                });
             });
         }
-
-        function shareChallenge() {
-            const text = "Я набил " + score + " ударов в BoxBall! Попробуй повторить. Мяч тут: " + WB_URL_SINGLE;
-            window.Telegram.WebApp.openTelegramLink("https://t.me/share/url?text=" + encodeURIComponent(text));
-        }
-
-        function setMode(m) { currentMode = m; document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active-mode')); document.getElementById('btn' + m.charAt(0).toUpperCase() + m.slice(1)).classList.add('active-mode'); }
-        function playSound(t) { if(!isSoundOn) return; /* звуки из v2 */ }
-        function openReviewLink(u) { window.Telegram.WebApp.openLink(u); }
         
-        function applyTheme(k) {
-            currentTheme = k; const t = THEMES[k]; const r = document.documentElement;
-            r.style.setProperty('--primary', t.color); r.style.setProperty('--bg-grad-start', t.bg1); r.style.setProperty('--bg-grad-end', t.bg2);
+        function launchConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            for(let i=0; i<30; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random()*100 + 'vw';
+                c.style.background = colors[Math.floor(Math.random()*colors.length)];
+                c.style.animationDuration = (Math.random()*2+2) + 's';
+                document.body.appendChild(c);
+                setTimeout(()=>c.remove(), 4000);
+            }
         }
     </script>
 </body>
