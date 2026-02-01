@@ -3,39 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Pro</title>
+    <title>BoxBall Pro Max</title>
     
     <script>
         const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
         const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА";
-        
-        const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
-        const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";     
-        
         const VALID_CODES = ["6433", "0309", "5528"];
-        const CHANNEL_URL = "https://t.me/DUROV";
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --primary: #ff0055;
-            --accent: #ffcc00;
-            --bg-grad-start: #1a0b0b;
-            --bg-grad-end: #000000;
-            --text-color: white;
-        }
-
+        :root { --primary: #ff0055; --bg-grad-start: #1a0b0b; --bg-grad-end: #000000; --text-color: white; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: radial-gradient(circle at center, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
             color: var(--text-color); display: flex; flex-direction: column; align-items: center;
             height: 100vh; margin: 0; overflow: hidden; text-align: center;
             user-select: none; -webkit-tap-highlight-color: transparent;
-            transition: background 0.5s;
         }
-
-        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.3s; }
-        .active { display: flex; opacity: 1; }
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; box-sizing: border-box; }
+        .active { display: flex; }
 
         /* ИГРОВОЙ КРУГ */
         .score-circle {
@@ -43,395 +29,225 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 90px; font-weight: 900; margin: 10px 0;
             background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 70%);
-            transition: border-color 0.1s; position: relative; z-index: 2;
+            transition: all 0.1s;
         }
-        
-        /* Визуализатор энергии удара */
-        .energy-bar-container {
-            width: 200px; height: 6px; background: #333; border-radius: 3px; margin-top: 20px;
-            position: relative; overflow: hidden;
-        }
-        .energy-bar-fill {
-            height: 100%; width: 0%; background: #00ff88; transition: width 0.05s linear;
-        }
-        
-        @keyframes shake-anim {
-            0% { transform: translate(1px, 1px); } 25% { transform: translate(-2px, -2px); }
-            50% { transform: translate(2px, 0px); } 75% { transform: translate(-1px, 2px); } 100% { transform: translate(0, 0); }
-        }
-        .shake { animation: shake-anim 0.1s; }
+        .hit { border-color: var(--primary); box-shadow: 0 0 50px var(--primary); color: var(--primary); transform: scale(1.05); }
 
-        .hit { border-color: var(--primary); box-shadow: 0 0 50px var(--primary); color: var(--primary); }
+        /* Визуализатор */
+        .energy-bar-container { width: 200px; height: 6px; background: #333; border-radius: 3px; margin-top: 20px; position: relative; overflow: hidden; }
+        .energy-bar-fill { height: 100%; width: 0%; background: #00ff88; transition: width 0.05s linear; }
 
-        button {
-            padding: 16px 0; font-size: 17px; font-weight: 800; background: var(--primary); color: white; border: none; border-radius: 14px;
-            width: 100%; max-width: 280px; margin-top: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3); position: relative; z-index: 5;
-            transition: background 0.3s;
-        }
-        button:active { transform: scale(0.96); }
-        button:disabled { background: #444; color: #888; box-shadow: none; cursor: not-allowed; }
-        button.secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; box-shadow: none; font-size: 14px; margin-top: 15px; padding: 12px; }
+        button { padding: 16px 0; font-size: 17px; font-weight: 800; background: var(--primary); color: white; border: none; border-radius: 14px; width: 100%; max-width: 280px; margin-top: 10px; cursor: pointer; text-transform: uppercase; }
+        button:disabled { background: #444; color: #888; }
 
-        /* ВЫБОР РЕЖИМА */
-        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; width: 95%; max-width: 340px; }
-        .mode-btn { flex: 1; padding: 10px 5px; background: rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 11px; font-weight: bold; margin: 0; box-shadow: none; }
-        .mode-btn.active-mode { background: var(--primary); color: white; border-color: var(--primary); }
-
-        /* НАСТРОЙКИ */
-        .settings-panel { background: rgba(30,30,30,0.95); border: 1px solid #555; padding: 20px; border-radius: 15px; margin-bottom: 20px; width: 85%; max-width: 300px; display: none; z-index: 10; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); cursor: pointer; }
-        
-        .debug-info { font-size: 10px; color: #666; font-family: monospace; margin-top: 5px; }
-
-        /* ПРОЧЕЕ */
-        .career-box { margin-bottom: 20px; padding: 10px; border-top: 1px solid #333; border-bottom: 1px solid #333; width: 100%; }
-        .career-text { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-        .career-num { font-size: 24px; color: #fff; font-weight: 900; }
-        
-        /* Профиль */
-        .player-profile { width: 80%; text-align: left; margin-bottom: 15px; border: 1px solid #444; border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.05); }
-        .player-name-label { font-size: 10px; color: #888; }
-        .player-name-val { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
-        
-        /* Уведомление */
-        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff88; z-index: 150; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
-        .toast.show { opacity: 1; }
+        /* Настройки */
+        .settings-panel { background: rgba(30,30,30,0.95); border: 1px solid #555; padding: 20px; border-radius: 15px; position: absolute; top: 20%; z-index: 100; display: none; width: 80%; }
+        input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); }
     </style>
 </head>
 <body>
 
-    <div id="toast" class="toast">📢 Готово к бою!</div>
+    <video id="noSleepVideo" playsinline muted loop style="display:none;">
+        <source src="data:video/mp4;base64,AAAAHGZ0eXBNNBB..." type="video/mp4"> 
+        </video>
 
     <div id="screen-login" class="screen active">
-        <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">SLOPE DETECTION SYSTEM</p>
-        
-        <div class="career-box">
-            <div class="career-text">Всего ударов</div>
-            <div class="career-num" id="totalHitsLogin">0</div>
-        </div>
-
-        <input type="text" id="passInput" placeholder="4 ЦИФРЫ ПОД ШТРИХКОДОМ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:16px; margin-bottom:15px; width:80%;">
-        <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
-        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит.</p>
+        <h1>BOXBALL</h1>
+        <p style="color:#666; font-size:12px;">V3.1 FIXED FREQUENCY</p>
+        <input type="text" id="passInput" placeholder="КОД" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:16px; margin-bottom:15px; width:80%;">
+        <button onclick="checkCode()">ВОЙТИ</button>
+        <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px;">Неверный код</p>
     </div>
 
     <div id="screen-game" class="screen">
-        <div class="mode-selector">
-            <button class="mode-btn active-mode" id="btnSprint" onclick="setMode('sprint')">⚡️ СПРИНТ</button>
-            <button class="mode-btn" id="btnSurvival" onclick="setMode('survival')">💀 ВЫЖИВАНИЕ</button>
-        </div>
+        <div style="font-size:42px; font-weight:bold; color:#fff;" id="timer">60</div>
+        <div style="font-size:12px; color:#aaa; cursor:pointer; margin-bottom:10px;" onclick="toggleSettings()">⚙️ Чувствительность</div>
 
-        <div style="display:flex; justify-content:space-between; width:90%; align-items: center; margin-bottom: 5px;">
-            <div style="background:rgba(255,255,255,0.1); padding:8px 25px; border-radius:20px; font-weight:bold; color:#fff; font-size: 42px; min-width: 110px;" id="timer">60</div>
-            <div style="font-size:12px; color:#aaa; cursor:pointer; border-bottom:1px dashed #555;" onclick="toggleSettings()">⚙️ Настройки</div>
-        </div>
-        
         <div class="settings-panel" id="settingsPanel">
-            <h3 style="margin-top:0; font-size:14px; margin-bottom:15px;">НАСТРОЙКИ МИКРОФОНА</h3>
-            
-            <label style="font-size:12px; color:#ccc;">Чувствительность: <span id="sensVal">5</span></label>
+            <h3>НАСТРОЙКИ</h3>
+            <label style="color:#ccc;">Чувствительность: <span id="sensVal">5</span></label>
             <input type="range" id="sensRange" min="1" max="10" value="5" oninput="updateSens(this.value)">
-            <p style="font-size:10px; color:#666; margin-top:-10px;">1 - Ловит всё подряд<br>10 - Только сильные удары</p>
-
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
-                <span style="font-size:14px; color:#ccc;">🔊 Звук удара</span>
-                <input type="checkbox" id="soundCheck" checked style="width:20px; height:20px;">
-            </div>
-
-            <button onclick="toggleSettings()" style="margin-top:20px; padding:10px; font-size:12px; background:#222; border:1px solid #444;">ЗАКРЫТЬ</button>
+            <p style="font-size:10px; color:#666;">1 = Ловит шепот<br>10 = Ловит кувалду</p>
+            <button onclick="toggleSettings()" style="background:#444;">ЗАКРЫТЬ</button>
         </div>
         
         <div class="score-circle" id="scoreDisplay">0</div>
         
-        <div class="energy-bar-container">
-            <div class="energy-bar-fill" id="energyBar"></div>
-        </div>
-        <div class="debug-info" id="debugStr">Ожидание старта...</div>
-        
-        <div style="color:#666; font-size:12px; margin-top:15px; margin-bottom:10px;" id="modeHint">НАБЕЙ МАКСИМУМ ЗА 60 СЕК</div>
+        <div class="energy-bar-container"><div class="energy-bar-fill" id="energyBar"></div></div>
+        <div style="font-size: 10px; color: #666; font-family: monospace; margin-top: 5px;" id="debugStr">Ready</div>
 
-        <button id="startBtn">НАЧАТЬ</button>
-        <button onclick="location.reload()" class="secondary-btn">🏠 В МЕНЮ</button>
+        <button id="startBtn">НАЧАТЬ РАУНД</button>
     </div>
 
     <div id="screen-save" class="screen">
-        <div style="font-size:14px; color:#aaa;">ВАШ РЕЗУЛЬТАТ</div>
-        <h1 style="font-size:80px; margin:0; color:var(--primary);" id="finalScore">0</h1>
-
-        <div id="nameInputArea">
-            <input type="text" id="nicknameInput" placeholder="Ваше Имя" maxlength="15" style="padding:14px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; width:80%; margin-bottom: 10px;">
-        </div>
-        
+        <div style="font-size:14px; color:#aaa;">РЕЗУЛЬТАТ</div>
+        <h1 style="font-size:80px; color:var(--primary);" id="finalScore">0</h1>
+        <input type="text" id="nicknameInput" placeholder="Имя" style="padding:14px; background:#222; border:1px solid #444; color:white; border-radius:12px; text-align:center; width:80%; margin-bottom:10px;">
         <button id="saveBtn" onclick="saveScore()">СОХРАНИТЬ</button>
-        <button onclick="location.reload()" class="secondary-btn">ИГРАТЬ СНОВА</button>
+        <button onclick="location.reload()" style="background:transparent; border:1px solid #555; margin-top:10px;">ЗАНОВО</button>
     </div>
 
     <script>
-        // === КОНФИГУРАЦИЯ ===
+        // === КОНСТАНТЫ V3.1 ===
+        // Исправленная частота: ловим от 350Гц (чтобы поймать пик 546Гц)
+        const FILTER_FREQ = 350; 
+        const DEBOUNCE_TIME = 150; // Пауза после удара
+        const SELF_MUTE_TIME = 120; // Пауза после нашего звука
+
+        // Меньший буфер = быстрее реакция (11мс вместо 46мс)
+        const BUFFER_SIZE = 512; 
+
         let SENSITIVITY = 5; 
-        // Чем ниже порог Slope, тем легче пробить. 
-        // 1 (Макс чуйка) = 0.005. 10 (Мин чуйка) = 0.05
-        let SLOPE_THRESHOLD = 0.02; 
-        
-        const DEBOUNCE_TIME = 200; // 200мс пауза после удара (защита от эха)
-        const SELF_MUTE_TIME = 150; // 150мс пауза после нашего звука "пиу"
+        let SLOPE_THRESHOLD = 0.03; 
 
-        let score = 0, isRunning = false;
-        let timeLeft = 60;
+        let score = 0, isRunning = false, timeLeft = 60;
         let audioCtx, analyser, microphone, scriptProcessor;
-        let lastEnergy = 0;
-        let lastHitTime = 0;
-        let isMutedByApp = false; // Флаг само-блокировки звуком
+        let lastEnergy = 0, lastHitTime = 0;
+        let isMutedByApp = false;
         let timerInterval;
-
-        const startBtn = document.getElementById('startBtn');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const debugStr = document.getElementById('debugStr');
-        const energyBar = document.getElementById('energyBar');
 
         // === ИНИЦИАЛИЗАЦИЯ ===
         window.onload = function() {
-            if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.expand(); }
-            
+            if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.expand();
             const savedSens = localStorage.getItem('box_sens_v3');
-            if(savedSens) {
-                document.getElementById('sensRange').value = savedSens;
-                updateSens(savedSens);
-            } else {
-                updateSens(5);
-            }
-
-            const total = localStorage.getItem('box_total_hits') || 0;
-            document.getElementById('totalHitsLogin').innerText = total;
-
-            if (localStorage.getItem('box_auth') === 'true') {
-                showScreen('screen-game');
-            }
+            if(savedSens) updateSens(savedSens);
         };
 
-        function showScreen(id) { 
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
-            document.getElementById(id).classList.add('active'); 
-        }
-
-        function checkCode() {
-            const val = document.getElementById('passInput').value.trim();
-            if(VALID_CODES.includes(val)) {
-                localStorage.setItem('box_auth', 'true');
-                showScreen('screen-game');
-            } else {
-                document.getElementById('errorMsg').style.display = 'block';
-            }
-        }
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        function checkCode() { if(VALID_CODES.includes(document.getElementById('passInput').value.trim())) showScreen('screen-game'); else document.getElementById('errorMsg').style.display = 'block'; }
+        function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display==='block')?'none':'block'; }
 
         function updateSens(val) {
             SENSITIVITY = parseInt(val);
             document.getElementById('sensVal').innerText = SENSITIVITY;
-            
-            // Маппинг 1..10 в порог наклона (Slope)
-            // 1 -> 0.005 (очень легко)
-            // 5 -> 0.025 (средне)
-            // 10 -> 0.08 (тяжело)
-            SLOPE_THRESHOLD = 0.005 + ((SENSITIVITY - 1) * 0.008);
-            
+            document.getElementById('sensRange').value = SENSITIVITY;
+            // 1 -> 0.005 (Супер чутко), 5 -> 0.03 (Норм), 10 -> 0.1 (Жестко)
+            SLOPE_THRESHOLD = 0.005 + ((SENSITIVITY - 1) * 0.01);
             localStorage.setItem('box_sens_v3', SENSITIVITY);
         }
 
-        function toggleSettings() {
-            const el = document.getElementById('settingsPanel');
-            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-        }
-
-        // === АУДИО ДВИЖОК ===
-        startBtn.addEventListener('click', async () => {
+        // === ГЛАВНЫЙ АУДИО КОД ===
+        document.getElementById('startBtn').addEventListener('click', async () => {
             if(isRunning) return;
+            
+            // Хак для No Sleep (воспроизводим невидимое видео)
+            // Это нужно, чтобы iPhone не уснул через минуту
+            const video = document.getElementById('noSleepVideo');
+            video.src = "https://www.w3schools.com/html/mov_bbb.mp4"; // Маленький заглушечный файл, можно заменить на base64
+            video.volume = 0;
+            video.play().catch(()=>{});
 
-            // 1. Инициализация AudioContext
             try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    await audioCtx.resume();
-                }
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
 
-                // 2. Получение доступа к микрофону
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: false,
-                        noiseSuppression: false,
-                        autoGainControl: false, // iOS часто игнорирует это, но мы пробуем
-                        latency: 0
-                    }
+                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, latency: 0 }
                 });
 
-                // 3. Цепочка обработки
+                // 1. Создаем узлы
                 microphone = audioCtx.createMediaStreamSource(stream);
                 analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 256; // Маленький буфер для скорости
-
-                // ВАЖНО: Фильтр высоких частот (High Pass)
-                // Срезаем всё ниже 700Гц. Убираем гул, оставляем только щелчок.
                 const filter = audioCtx.createBiquadFilter();
-                filter.type = 'highpass';
-                filter.frequency.value = 700;
-
-                // Усилитель (программный буст, так как iPhone тихий)
                 const gainNode = audioCtx.createGain();
-                gainNode.gain.value = 5.0; // Умножаем громкость в 5 раз
 
-                // Собираем: Mic -> Filter -> Gain -> Analyser
+                // 2. Настройка: ЛОВИМ 546 Гц!
+                filter.type = 'highpass';
+                filter.frequency.value = FILTER_FREQ; // 350Hz (пропустит 546Hz)
+
+                gainNode.gain.value = 6.0; // Усиливаем в 6 раз (для тихих iPhone)
+
+                // 3. Цепь: Mic -> Filter -> Gain -> Analyser
                 microphone.connect(filter);
                 filter.connect(gainNode);
                 gainNode.connect(analyser);
 
-                // Запускаем процессор скриптов (deprecated, но надежнее AudioWorklet для простых задач)
-                scriptProcessor = audioCtx.createScriptProcessor(2048, 1, 1);
+                // 4. Процессор с МАЛЕНЬКИМ буфером (512)
+                scriptProcessor = audioCtx.createScriptProcessor(BUFFER_SIZE, 1, 1);
                 analyser.connect(scriptProcessor);
                 scriptProcessor.connect(audioCtx.destination);
 
                 scriptProcessor.onaudioprocess = processAudio;
 
-                startGame();
+                // Старт таймера
+                score = 0; document.getElementById('scoreDisplay').innerText = 0;
+                timeLeft = 60; isRunning = true;
+                document.getElementById('startBtn').style.display = 'none';
 
-            } catch (err) {
-                alert("Ошибка микрофона: " + err);
-            }
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('timer').innerText = timeLeft;
+                    if(timeLeft <= 0) finishGame();
+                }, 1000);
+
+            } catch (e) { alert("Ошибка Mic: " + e); }
         });
 
-        function processAudio(event) {
-            if (!isRunning) return;
+        function processAudio(e) {
+            if(!isRunning || isMutedByApp) return;
 
-            // Если мы сами проигрываем звук - не слушаем микрофон
-            if (isMutedByApp) return;
-
-            const inputBuffer = event.inputBuffer.getChannelData(0);
+            const buf = e.inputBuffer.getChannelData(0);
             let sum = 0;
+            // Считаем RMS (энергию)
+            for(let i=0; i<buf.length; i++) sum += buf[i]*buf[i];
+            const rms = Math.sqrt(sum / buf.length);
 
-            // Считаем энергию (RMS)
-            for (let i = 0; i < inputBuffer.length; i++) {
-                sum += inputBuffer[i] * inputBuffer[i];
-            }
-            const rms = Math.sqrt(sum / inputBuffer.length);
-
-            // === АЛГОРИТМ SLOPE (ПРОИЗВОДНАЯ) ===
-            // Мы ищем не "громкость", а "разницу" с прошлым кадром
+            // Детектор "Взрыва" (Slope)
             const slope = rms - lastEnergy;
             
-            // Визуализация
-            const visual = Math.min(slope * 500, 100); 
-            energyBar.style.width = Math.max(visual, 0) + "%";
-            debugStr.innerText = `Slope: ${slope.toFixed(4)} | Thr: ${SLOPE_THRESHOLD.toFixed(4)}`;
+            // Визуал
+            const vis = Math.min(slope * 400, 100);
+            document.getElementById('energyBar').style.width = Math.max(vis,0) + "%";
+            document.getElementById('debugStr').innerText = `Slope: ${slope.toFixed(3)} / ${SLOPE_THRESHOLD.toFixed(3)}`;
 
             const now = Date.now();
-
-            // ПРОВЕРКА УДАРА
-            // 1. Склон (резкость) выше порога
-            // 2. Прошло время Debounce (защита от эха)
             if (slope > SLOPE_THRESHOLD && (now - lastHitTime > DEBOUNCE_TIME)) {
                 registerHit();
                 lastHitTime = now;
             }
-
-            // Запоминаем энергию для следующего кадра
-            // Делаем плавное затухание "памяти", чтобы не застрять на пике
             lastEnergy = rms;
         }
 
         function registerHit() {
             score++;
-            scoreDisplay.innerText = score;
-            
-            // Анимация
-            scoreDisplay.classList.add('hit');
-            scoreDisplay.classList.add('shake');
-            setTimeout(() => {
-                scoreDisplay.classList.remove('hit');
-                scoreDisplay.classList.remove('shake');
-            }, 100);
-
-            // Звук
-            if(document.getElementById('soundCheck').checked) {
-                playBeep();
-            }
+            const el = document.getElementById('scoreDisplay');
+            el.innerText = score;
+            el.classList.add('hit');
+            setTimeout(()=>el.classList.remove('hit'), 100);
+            playBeep();
         }
 
         function playBeep() {
-            // Блокируем микрофон на мгновение, чтобы не услышать себя
-            isMutedByApp = true;
-            setTimeout(() => { isMutedByApp = false; }, SELF_MUTE_TIME);
+            isMutedByApp = true; // Глушим микрофон
+            setTimeout(() => isMutedByApp = false, SELF_MUTE_TIME);
 
-            const osc = audioCtx.createOscillator();
+            const o = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            osc.connect(g);
-            g.connect(audioCtx.destination);
+            o.connect(g); g.connect(audioCtx.destination);
             
-            // Короткий высокий "ПИП" (1200Гц), который хорошо слышно, но он короткий
-            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            // Короткий "клик" на 1000Гц
+            o.frequency.setValueAtTime(1000, audioCtx.currentTime);
             g.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+            o.start(); o.stop(audioCtx.currentTime + 0.08);
         }
 
-        function startGame() {
-            score = 0;
-            scoreDisplay.innerText = "0";
-            timeLeft = 60;
-            isRunning = true;
-            
-            startBtn.style.display = 'none';
-            document.querySelector('.mode-selector').style.opacity = '0.5';
-
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('timer').innerText = timeLeft;
-                if(timeLeft <= 0) endGame();
-            }, 1000);
-        }
-
-        function endGame() {
-            isRunning = false;
-            clearInterval(timerInterval);
-            
-            // Очистка аудио
-            if (scriptProcessor) scriptProcessor.disconnect();
-            if (analyser) analyser.disconnect();
-            if (microphone) microphone.disconnect();
-            
+        function finishGame() {
+            isRunning = false; clearInterval(timerInterval);
+            if(scriptProcessor) { scriptProcessor.disconnect(); microphone.disconnect(); }
             document.getElementById('finalScore').innerText = score;
-            
-            // Сохраняем общий прогресс
-            let total = parseInt(localStorage.getItem('box_total_hits') || 0);
-            total += score;
-            localStorage.setItem('box_total_hits', total);
-
             showScreen('screen-save');
         }
 
         function saveScore() {
             const name = document.getElementById('nicknameInput').value;
-            if(!name) { alert("Введи имя!"); return; }
+            if(!name) return alert("Введи имя");
+            document.getElementById('saveBtn').innerText = "ОТПРАВЛЕНО";
             
-            const btn = document.getElementById('saveBtn');
-            btn.innerText = "ОТПРАВЛЕНО!";
-            btn.disabled = true;
-
-            // Простая отправка без ожидания (для скорости)
             fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors",
-                body: JSON.stringify({ name: name, score: score, date: new Date().toLocaleDateString() })
+                method: "POST", mode: "no-cors",
+                body: JSON.stringify({name: name, score: score, date: new Date().toLocaleDateString()})
             });
-        }
-        
-        function setMode(m) {
-            // Заглушка для переключения стилей кнопок
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active-mode'));
-            if(m === 'sprint') document.getElementById('btnSprint').classList.add('active-mode');
-            if(m === 'survival') document.getElementById('btnSurvival').classList.add('active-mode');
         }
     </script>
 </body>
