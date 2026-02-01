@@ -3,17 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BoxBall Russia</title>
+    <title>Fight Ball  Russia</title>
     
     <script>
-        const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
-        const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА";
+        // ====================================================================
+        // 🚨 НАСТРОЙКИ: ЗАМЕНИ ЭТИ ССЫЛКИ НА СВОИ!
+        // ====================================================================
         
+        // 1. Ссылка на опубликованный Google Apps Script (см. инструкцию ниже)
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/library/d/1MicvXuWVytV77oWowPcY1LVqN2hCux6sP3maZfp39mrZV6lxEdyd6n4C/5"; 
+        
+        // 2. Ссылка на твой контакт или бота поддержки (например: https://t.me/my_support_bot)
+        const SUPPORT_LINK = "https://t.me/fightBallHelp"; 
+        
+        // 3. Ссылка на документ с правилами
+        const POLICY_URL = "https://script.google.com/macros/s/AKfycbxkA8d8DIy994lgU70DGQ604EZ6e59kkEPm_Zhfaj8eG_QxmbwKltgFK5kRF3bl41_LzA/exec";
+        
+        // 4. Ссылки на товары Wildberries
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
-        const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";     
+        const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";      
         
+        // Коды доступа (последние 4 цифры штрихкода)
         const VALID_CODES = ["6433", "0309", "5528"];
     </script>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -125,7 +138,6 @@
         .player-name-val { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
         .edit-link { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; float: right; }
         
-        /* Стили для инструкции */
         .help-step { margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
         .help-step:last-child { border-bottom: none; }
         .help-title { font-weight: bold; color: var(--accent); margin-bottom: 5px; display: block; }
@@ -190,7 +202,6 @@
             <button onclick="document.getElementById('helpModal').style.display='none'" style="margin-top:15px; background: #333;">ВСЁ ПОНЯТНО, В БОЙ! 🥊</button>
         </div>
     </div>
-    ```
 
     <div id="reviewModal" class="modal-overlay">
         <div class="modal-content">
@@ -213,7 +224,7 @@
     </div>
 
     <div id="screen-login" class="screen active">
-        <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
+        <h1 style="letter-spacing: 2px; margin-bottom: 5px;">Fight Ball </h1>
         <p style="color:#666; font-size:12px; margin-bottom: 20px;">AUDIO ENGINE V4.1</p>
         
         <div class="career-box">
@@ -228,8 +239,13 @@
         
         <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433</p>
         
+        <div style="margin-top: 20px; font-size: 11px; color: #666;">
+            Возникли проблемы? 
+            <span onclick="openSupport()" style="color: #999; text-decoration: underline; cursor: pointer;">Написать в поддержку</span>
+        </div>
+        
         <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
-            © 2026 BOXBALL RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
+            © 2026 Fight Ball  RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
         </div>
     </div>
 
@@ -263,6 +279,11 @@
 
             <button onclick="document.getElementById('helpModal').style.display='flex'" style="background: #444; border: 1px solid #666; margin-bottom: 5px;">❓ ИНСТРУКЦИЯ</button>
             <button onclick="openSkins()" style="background: linear-gradient(45deg, #FFD700, #DAA520); color: black; margin-bottom: 5px;">🎨 ТЕМЫ / СКИНЫ</button>
+            
+            <button onclick="openSupport()" style="background: rgba(255,255,255,0.1); border: 1px solid #555; font-size: 12px; color: #ccc; margin-bottom: 5px;">
+                💬 НАПИСАТЬ РАЗРАБОТЧИКУ
+            </button>
+            
             <button onclick="logout()" style="background: #220000; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; font-size: 12px; margin-bottom: 5px;">🚪 Выйти</button>
             <button onclick="toggleSettings()" style="margin-top:5px; padding:10px; font-size:12px; background:#222; border:1px solid #444;">ЗАКРЫТЬ</button>
         </div>
@@ -300,6 +321,15 @@
             <div class="player-name-val" id="displayName">Аноним</div>
         </div>
         
+        <div style="width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+            <button onclick="shareChallenge()" style="background: linear-gradient(90deg, #0088cc, #0099ff); border: none; box-shadow: 0 4px 15px rgba(0,136,204,0.4);">
+                ⚔️ БРОСИТЬ ВЫЗОВ
+            </button>
+            <button onclick="openProduct()" style="background: rgba(255,255,255,0.1); border: 1px solid #a100ff; color: #d699ff; font-size: 13px; padding: 12px; margin-top: 0;">
+                🛍 КУПИТЬ ТАКОЙ МЯЧ
+            </button>
+        </div>
+
         <p style="font-size:10px; color:#666; cursor:pointer; text-decoration:underline;" onclick="openPolicy()">Правила и политика</p>
 
         <button id="saveBtn" onclick="saveScore()">СОХРАНИТЬ В ТОП</button>
@@ -317,8 +347,8 @@
     </div>
 
     <script>
-        // === НАСТРОЙКИ АУДИО (V4.0 FINAL) ===
-        const FILTER_FREQ = 350; // Ловит 546Гц (удар)
+        // === НАСТРОЙКИ АУДИО (V4.1 FINAL) ===
+        const FILTER_FREQ = 350; 
         const DEBOUNCE_TIME = 150; 
         const SELF_MUTE_TIME = 120; 
         const BUFFER_SIZE = 512; 
@@ -378,7 +408,6 @@
             SENSITIVITY = parseInt(val);
             document.getElementById('sensVal').innerText = SENSITIVITY;
             document.getElementById('sensRange').value = SENSITIVITY;
-            // Маппинг 1..10 в порог наклона
             SLOPE_THRESHOLD = 0.005 + ((SENSITIVITY - 1) * 0.01);
             localStorage.setItem('box_sens_v3', SENSITIVITY);
         }
@@ -389,28 +418,18 @@
 
         // 🔥 NO SLEEP FUNCTON 🔥
         async function activateNoSleep() {
-            // 1. Попытка нативного API (Android / Modern iOS)
             try {
                 if ('wakeLock' in navigator) {
                     await navigator.wakeLock.request('screen');
-                    console.log("WakeLock Active");
                 }
-            } catch (err) {
-                console.log("WakeLock API failed: ", err);
-            }
-
-            // 2. Попытка видео-хака (iOS Fallback)
+            } catch (err) { console.log("WakeLock failed: ", err); }
             const video = document.getElementById('wakeLockVideo');
-            if (video) {
-                video.play().catch(e => console.log("Video Hack failed: ", e));
-            }
+            if (video) { video.play().catch(e => console.log("Video Hack failed: ", e)); }
         }
 
         // === АУДИО ДВИЖОК ===
         document.getElementById('startBtn').addEventListener('click', async () => {
             if(isRunning) return;
-            
-            // Включаем "Бессонницу" сразу при клике
             activateNoSleep();
 
             try {
@@ -426,10 +445,9 @@
                 const filter = audioCtx.createBiquadFilter();
                 const gainNode = audioCtx.createGain();
 
-                // ФИЛЬТР: HighPass 350Hz (пропускает 546Hz)
                 filter.type = 'highpass';
                 filter.frequency.value = FILTER_FREQ;
-                gainNode.gain.value = 6.0; // Усиление x6
+                gainNode.gain.value = 6.0;
 
                 microphone.connect(filter);
                 filter.connect(gainNode);
@@ -454,10 +472,7 @@
             for(let i=0; i<buf.length; i++) sum += buf[i]*buf[i];
             const rms = Math.sqrt(sum / buf.length);
 
-            // Детекция "Взрыва" (Slope)
             const slope = rms - lastEnergy;
-            
-            // Визуал
             const vis = Math.min(slope * 400, 100);
             document.getElementById('energyBar').style.width = Math.max(vis,0) + "%";
             document.getElementById('debugStr').innerText = `Slope: ${slope.toFixed(3)} / ${SLOPE_THRESHOLD.toFixed(3)}`;
@@ -475,11 +490,9 @@
             const el = document.getElementById('scoreDisplay');
             el.innerText = score;
             
-            // Эффекты
             el.classList.add('shake');
             if(currentMode === 'survival') {
                 el.classList.add('hit-survival');
-                // Логика выживания: добавляем время
                 let bonus = 1.0; 
                 if (score > 30) bonus = 0.5; 
                 if (score > 60) bonus = 0.3;
@@ -491,7 +504,6 @@
             }
             setTimeout(()=> { el.classList.remove('hit'); el.classList.remove('hit-survival'); el.classList.remove('shake'); }, 100);
 
-            // Звук (если включен)
             if(document.getElementById('soundCheck').checked) playBeep();
         }
 
@@ -527,7 +539,6 @@
 
             timerInterval = setInterval(() => {
                 timeLeft -= 1;
-                // Для выживания таймер может быть дробным, округляем для вида
                 document.getElementById('timer').innerText = Math.floor(timeLeft);
                 if(timeLeft <= 0) finishGame();
             }, 1000);
@@ -538,7 +549,6 @@
         }
         
         function playTick() {
-             // Тихий тик метронома
             const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
             o.connect(g); g.connect(audioCtx.destination);
             o.frequency.value = 800; o.type = 'square';
@@ -556,7 +566,6 @@
             document.querySelector('.mode-selector').style.opacity = '1';
             document.getElementById('startBtn').style.display = 'block';
 
-            // Ранги
             let rank = "НОВИЧОК";
             if(score > 30) rank = "ЛЮБИТЕЛЬ";
             if(score > 60) rank = "БОЕЦ";
@@ -579,11 +588,15 @@
                 document.getElementById('recordMsg').innerText = "";
             }
 
+            // Сброс кнопки сохранения
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = "СОХРАНИТЬ В ТОП";
+            btn.disabled = false;
+
             checkSavedName();
             showScreen('screen-save');
         }
 
-        // === ИНТЕРФЕЙС И СОХРАНЕНИЕ ===
         function setMode(mode) {
             if(isRunning) return;
             currentMode = mode;
@@ -639,6 +652,11 @@
         function saveScore() {
             let name = "";
             const savedName = localStorage.getItem('box_username');
+            
+            // ПОЛУЧАЕМ TELEGRAM ID ДЛЯ ПОЛИТИКИ КОНФИДЕНЦИАЛЬНОСТИ
+            const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+            const tgId = tgUser ? tgUser.id : "anon";
+
             if (savedName && document.getElementById('nameDisplayArea').style.display !== 'none') {
                 name = savedName;
             } else {
@@ -650,14 +668,27 @@
             document.getElementById('saveBtn').innerText = "ОТПРАВКА..."; 
             document.getElementById('saveBtn').disabled = true;
             
-            // Убрал no-cors чтобы проверить (если сервер разрешает)
             fetch(GOOGLE_SCRIPT_URL, { 
                 method: "POST", 
-                mode: "no-cors", 
-                body: JSON.stringify({ name: name, score: score, mode: currentMode, date: new Date().toLocaleDateString() }) 
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ 
+                    name: name, 
+                    score: score, 
+                    mode: currentMode, 
+                    date: new Date().toLocaleDateString(),
+                    tgId: tgId 
+                }) 
             })
-            .then(() => showLeaderboard(false, currentMode))
-            .catch(() => showLeaderboard(false, currentMode));
+            .then(r => r.text())
+            .then(data => {
+                console.log("Saved:", data);
+                showLeaderboard(false, currentMode);
+            })
+            .catch(err => {
+                alert("Ошибка сохранения. Проверь интернет.");
+                document.getElementById('saveBtn').innerText = "СОХРАНИТЬ В ТОП";
+                document.getElementById('saveBtn').disabled = false;
+            });
         }
 
         function showLeaderboard(fromMenu = false, mode = 'sprint') {
@@ -722,6 +753,22 @@
             }
         }
         function openReviewLink(url) { window.Telegram.WebApp.openLink(url); document.getElementById('reviewModal').style.display = 'none'; }
+        
+        // НОВЫЕ ФУНКЦИИ (ВИРАЛЬНОСТЬ И ПОДДЕРЖКА)
+        function shareChallenge() {
+            const productLink = WB_URL_SINGLE; 
+            const message = `🥊 Я набил ${score} очков в Fight Ball !\n\nСлабо повторить? 😏\n\nТренажер брал тут 👇`;
+            const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(productLink)}&text=${encodeURIComponent(message)}`;
+            window.Telegram.WebApp.openTelegramLink(tgShareUrl);
+        }
+
+        function openProduct() {
+            window.Telegram.WebApp.openLink(WB_URL_SINGLE);
+        }
+        
+        function openSupport() {
+            window.Telegram.WebApp.openTelegramLink(SUPPORT_LINK);
+        }
     </script>
 </body>
 </html>
