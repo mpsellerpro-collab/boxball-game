@@ -7,16 +7,23 @@
     
     <script>
         // ====================================================================
-        // 🚨 НАСТРОЙКИ
+        // 🚨 НАСТРОЙКИ ПРИЛОЖЕНИЯ
         // ====================================================================
         
+        // 1. Твой Google Apps Script (проверь, чтобы заканчивался на /exec)
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykbaCz_dZksGEVT7IkpbSPqMeY6L-2ui5ChzQCbT0UuH6T_HBJfUn9WHj52fJ3hzZfVg/exec"; 
+        
+        // 2. Твой контакт поддержки
         const SUPPORT_LINK = "https://t.me/fightBallHelp"; 
+        
+        // 3. Ссылка на правила
         const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing";
         
-        // 🔴 ССЫЛКА НА БОТА (для кнопки "Бросить вызов")
-        const BOT_LINK = "https://t.me/@FightBallGameBot/start"; 
+        // 4. Ссылка на ТВОЕГО БОТА (чтобы кнопка "Вызов" вела в игру)
+        // 👇👇👇 ЗАМЕНИ НА СВОЮ 👇👇👇
+        const BOT_LINK = "https://t.me/YOUR_BOT_USERNAME/start"; 
 
+        // 5. Ссылки на товары WB
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
         const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";       
         
@@ -191,6 +198,11 @@
                     ❓ <b>Очки крутятся сами:</b><br>В комнате шумно. Поставь Чувствительность на <b>7 или 8</b>.<br><br>
                     ❓ <b>Гаснет экран:</b><br>Зайди в настройки телефона ➝ Экран ➝ Автоблокировка ➝ <b>Никогда</b>.
                 </div>
+                
+                <div class="help-step" style="border:none; text-align:center; margin-top:10px;">
+                    🏆 <b>ПОПАДИ В ТОП!</b><br>
+                    После игры нажми «СОХРАНИТЬ», и мир увидит твой рекорд!
+                </div>
             </div>
 
             <button onclick="document.getElementById('helpModal').style.display='none'" style="margin-top:15px; background: #333;">ВСЁ ПОНЯТНО, В БОЙ! 🥊</button>
@@ -327,6 +339,7 @@
         <p style="font-size:10px; color:#666; cursor:pointer; text-decoration:underline;" onclick="openPolicy()">Правила и политика</p>
 
         <button id="saveBtn" onclick="saveScore()">СОХРАНИТЬ В ТОП</button>
+        
         <button onclick="location.reload()" class="secondary-btn">ИГРАТЬ СНОВА</button>
     </div>
 
@@ -500,10 +513,9 @@
                     document.getElementById('scoreDisplay').classList.add('reaction-wait');
                     if(document.getElementById('soundCheck').checked) playBeep();
                 } else {
-                    // Ударил без сигнала (фальстарт) - ничего не делаем или штраф
-                    // Можно добавить визуальный эффект ошибки, если нужно
+                    // Ударил без сигнала (фальстарт) - ничего не делаем
                 }
-                return; // Выход, стандартная логика ниже не нужна
+                return; // Выход
             }
 
             // ЛОГИКА ДЛЯ ОСТАЛЬНЫХ РЕЖИМОВ
@@ -667,9 +679,15 @@
                 document.getElementById('recordMsg').innerText = "";
             }
 
-            const btn = document.getElementById('saveBtn');
-            btn.innerText = "СОХРАНИТЬ В ТОП";
-            btn.disabled = false;
+            // ЛОГИКА КНОПКИ СОХРАНЕНИЯ (Скрываем для Реакции)
+            const saveBtn = document.getElementById('saveBtn');
+            if (currentMode === 'reaction') {
+                saveBtn.style.display = 'none';
+            } else {
+                saveBtn.style.display = 'inline-block';
+                saveBtn.innerText = "СОХРАНИТЬ В ТОП";
+                saveBtn.disabled = false;
+            }
 
             checkSavedName();
             showScreen('screen-save');
