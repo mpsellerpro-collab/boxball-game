@@ -1,3 +1,19 @@
+Конечно. Сейчас инструкция довольно базовая. Давай сделаем её **профессиональной и подробной**, как в настоящих спортивных приложениях.
+
+Я разбил инструкцию на 4 понятных шага: **Экипировка, Телефон, Настройка звука и Режимы**.
+
+Вот **полный готовый код** с обновленным, расширенным окном помощи.
+
+### Что нового в инструкции:
+
+1. **📐 Настройка снаряда:** Добавил пункт про длину резинки (это критически важно для новичков, иначе мяч будет бить в лицо или не возвращаться).
+2. **📱 Расположение:** Объяснил, почему нельзя держать телефон в руках.
+3. **🎚 Подробный гайд по ползунку:** Как отличить "эхо" от "тихого микрофона".
+4. **🎮 Описание режимов:** Объяснил, в чем суть "Выживания" и "Ритма".
+
+Скопируй этот код целиком:
+
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -6,7 +22,6 @@
     <title>BoxBall Russia</title>
     
     <script>
-        // Вставь сюда ссылку на опубликованный Google Script Web App
         const GOOGLE_SCRIPT_URL = "ВСТАВЬТЕ_СЮДА_ВАШУ_ССЫЛКУ_ИЗ_GOOGLE"; 
         const POLICY_URL = "https://docs.google.com/document/d/ВАША_ССЫЛКА_НА_ПРАВИЛА";
         
@@ -125,6 +140,11 @@
         .player-name-label { font-size: 10px; color: #888; }
         .player-name-val { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 5px; }
         .edit-link { font-size: 11px; color: var(--accent); text-decoration: underline; cursor: pointer; float: right; }
+        
+        /* Стили для инструкции */
+        .help-step { margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+        .help-step:last-child { border-bottom: none; }
+        .help-title { font-weight: bold; color: var(--accent); margin-bottom: 5px; display: block; }
     </style>
 </head>
 <body>
@@ -137,28 +157,45 @@
     <div id="toast" class="toast">📢 Добро пожаловать!</div>
 
     <div id="helpModal" class="modal-overlay">
-        <div class="modal-content" style="text-align: left; border-color: var(--accent);">
-            <h2 style="text-align:center; margin-top:0; color:var(--accent);">🥊 ИНСТРУКЦИЯ</h2>
+        <div class="modal-content" style="text-align: left; border-color: var(--accent); max-width: 360px;">
+            <h2 style="text-align:center; margin-top:0; color:var(--accent); letter-spacing: 1px;">🎓 ШКОЛА BOXBALL</h2>
             
-            <div style="font-size:13px; line-height:1.4; color:#ddd; max-height:60vh; overflow-y:auto;">
-                <p><b>1️⃣ КУДА КЛАСТЬ ТЕЛЕФОН?</b><br>
-                Положи его на стол или пол перед собой (1-2 метра).<br>
-                ❌ Не держи в руках и карманах!</p>
-
-                <p><b>2️⃣ ЕСЛИ НЕ СЧИТАЕТ УДАРЫ</b><br>
-                Зайди в ⚙️ <b>Настройки</b> и сдвинь бегунок <b>ВЛЕВО (к цифре 1)</b>. Это включит "супер-слух" (для iPhone).</p>
-
-                <p><b>3️⃣ ЕСЛИ СЧИТАЕТ ЛИШНЕЕ</b><br>
-                Сдвинь бегунок <b>ВПРАВО (к цифре 10)</b>, чтобы телефон слышал только мощные удары.</p>
+            <div style="font-size:13px; line-height:1.5; color:#ddd; max-height:65vh; overflow-y:auto; padding-right:5px;">
                 
-                <p><b>4️⃣ ЭКРАН</b><br>
-                Не блокируй телефон! Мы сами не дадим ему погаснуть во время боя.</p>
+                <div class="help-step">
+                    <span class="help-title">1️⃣ ПОДГОТОВКА СНАРЯДА</span>
+                    Надень повязку на голову. Длина резинки должна быть равна <b>длине вытянутой руки</b> (от плеча до кулака). Если резинка длиннее — намотай её на повязку.
+                </div>
+
+                <div class="help-step">
+                    <span class="help-title">2️⃣ ГДЕ ТЕЛЕФОН?</span>
+                    Положи телефон на <b>стол, полку или пол</b> перед собой (1-2 метра).<br>
+                    ❌ <b>В кармане не сработает!</b> Микрофон должен "слышать" удар.
+                </div>
+
+                <div class="help-step">
+                    <span class="help-title">3️⃣ НАСТРОЙКА (ВАЖНО!)</span>
+                    Зайди в ⚙️ <b>Настройки</b> и двигай ползунок:<br>
+                    🔹 <b>ВЛЕВО (к цифре 1)</b> — если удары пропускаются (включить супер-слух).<br>
+                    🔹 <b>ВПРАВО (к цифре 10)</b> — если считает лишнее (шаги, эхо, шум).
+                </div>
+                
+                <div class="help-step">
+                    <span class="help-title">4️⃣ РЕЖИМЫ ИГРЫ</span>
+                    ⚡️ <b>СПРИНТ:</b> Набей максимум очков за 60 секунд.<br>
+                    💀 <b>ВЫЖИВАНИЕ:</b> Таймер (10 сек) бежит вниз. Каждый удар добавляет время. Остановился — проиграл!<br>
+                    🎵 <b>РИТМ:</b> Метроном задает темп. Попадай в каждый "тик".
+                </div>
+
+                <div class="help-step">
+                    <span class="help-title">💡 СОВЕТ</span>
+                    Не блокируй экран телефона! Приложение само не даст ему погаснуть во время боя.
+                </div>
             </div>
 
-            <button onclick="document.getElementById('helpModal').style.display='none'" style="margin-top:15px; background: #333;">ПОНЯТНО 👌</button>
+            <button onclick="document.getElementById('helpModal').style.display='none'" style="margin-top:15px; background: #333;">ВСЁ ПОНЯТНО 👌</button>
         </div>
     </div>
-
     <div id="reviewModal" class="modal-overlay">
         <div class="modal-content">
             <div style="font-size: 24px; margin-bottom: 10px;">🎉 НОВЫЙ РЕКОРД!</div>
@@ -181,7 +218,7 @@
 
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">BOXBALL</h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">PRO AUDIO ENGINE V4.0</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">AUDIO ENGINE V4.1</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -191,7 +228,7 @@
         <input type="text" id="passInput" placeholder="4 ЦИФРЫ ПОД ШТРИХКОДОМ" style="padding:15px; border-radius:12px; border:1px solid #444; background:#222; color:white; text-align:center; font-size:16px; margin-bottom:15px; width:80%;">
         <button onclick="checkCode()">ВОЙТИ В ИГРУ</button>
         
-        <button onclick="document.getElementById('helpModal').style.display='flex'" class="secondary-btn" style="margin-top:10px; border-color:var(--accent); color:var(--accent);">❓ КАК ИГРАТЬ</button>
+        <button onclick="document.getElementById('helpModal').style.display='flex'" class="secondary-btn" style="margin-top:10px; border-color:var(--accent); color:var(--accent); font-weight:bold;">🎓 КАК ИГРАТЬ (ИНСТРУКЦИЯ)</button>
         
         <p id="errorMsg" style="color:#ff4d4d; display:none; margin-top:10px; font-size:12px;">Код не подходит. Попробуй 6433</p>
         
@@ -692,3 +729,5 @@
     </script>
 </body>
 </html>
+
+```
