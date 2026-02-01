@@ -7,27 +7,19 @@
     
     <script>
         // ====================================================================
-        // 🚨 НАСТРОЙКИ: ЗАМЕНИ ЭТИ ССЫЛКИ НА СВОИ!
+        // 🚨 НАСТРОЙКИ
         // ====================================================================
         
-        // 1. Ссылка на опубликованный Google Apps Script
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykbaCz_dZksGEVT7IkpbSPqMeY6L-2ui5ChzQCbT0UuH6T_HBJfUn9WHj52fJ3hzZfVg/exec"; 
-        
-        // 2. Ссылка на твой контакт поддержки
         const SUPPORT_LINK = "https://t.me/fightBallHelp"; 
-        
-        // 3. Ссылка на документ с правилами
         const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing";
         
-        // 4. Ссылка на ИГРУ (Твоего бота), чтобы друзья могли зайти
-        // 🔴🔴🔴 ОБЯЗАТЕЛЬНО ЗАМЕНИ НА СВОЮ 🔴🔴🔴
+        // 🔴 ССЫЛКА НА БОТА (для кнопки "Бросить вызов")
         const BOT_LINK = "https://t.me/@FightBallGameBot/start"; 
 
-        // 5. Ссылки на товары Wildberries
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
         const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";       
         
-        // Коды доступа (последние 4 цифры штрихкода)
         const VALID_CODES = ["6433", "0309", "5528"];
     </script>
 
@@ -47,7 +39,7 @@
             color: var(--text-color); display: flex; flex-direction: column; align-items: center;
             height: 100vh; margin: 0; overflow: hidden; text-align: center;
             user-select: none; -webkit-tap-highlight-color: transparent;
-            transition: background 0.5s;
+            transition: background 0.3s;
         }
 
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.3s; }
@@ -59,10 +51,13 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 90px; font-weight: 900; margin: 10px 0;
             background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 70%);
-            transition: border-color 0.1s; position: relative; z-index: 2;
+            transition: all 0.1s; position: relative; z-index: 2;
         }
         
-        /* Визуализатор энергии */
+        /* Цвета для режима Реакция */
+        .reaction-wait { border-color: #555; color: #555; }
+        .reaction-go { border-color: #00ff88; color: #00ff88; box-shadow: 0 0 60px #00ff88; background: rgba(0,255,136,0.1); transform: scale(1.05); }
+
         .energy-bar-container {
             width: 200px; height: 4px; background: #333; border-radius: 2px; margin-top: 15px;
             position: relative; overflow: hidden; opacity: 0.7;
@@ -121,7 +116,7 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; }
         .modal-content { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid var(--primary); text-align: center; width: 85%; max-width: 320px; max-height: 80vh; overflow-y: auto; }
 
-        /* УВЕДОМЛЕНИЕ (ТОСТ) */
+        /* УВЕДОМЛЕНИЕ */
         .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff88; z-index: 150; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
         .toast.show { opacity: 1; }
 
@@ -187,7 +182,7 @@
                     <span class="help-title">4️⃣ РЕЖИМЫ</span>
                     ⚡️ <b>СПРИНТ:</b> Максимум ударов за 60 сек.<br>
                     💀 <b>ВЫЖИВАНИЕ:</b> Таймер (10 сек) падает. Удар добавляет время. Остановился — проиграл!<br>
-                    🎵 <b>РИТМ:</b> Попадай в такт метронома.
+                    🚦 <b>РЕАКЦИЯ:</b> Жди зеленый сигнал! Бей только по команде.
                 </div>
 
                 <div class="help-step" style="background:rgba(255,0,0,0.1); padding:10px; border-radius:8px; border:1px solid #555;">
@@ -195,11 +190,6 @@
                     ❓ <b>Бью, а счет не идет:</b><br>Зайди в настройки, поставь Чувствительность на <b>1 или 2</b>.<br><br>
                     ❓ <b>Очки крутятся сами:</b><br>В комнате шумно. Поставь Чувствительность на <b>7 или 8</b>.<br><br>
                     ❓ <b>Гаснет экран:</b><br>Зайди в настройки телефона ➝ Экран ➝ Автоблокировка ➝ <b>Никогда</b>.
-                </div>
-                
-                <div class="help-step" style="border:none; text-align:center; margin-top:10px;">
-                    🏆 <b>ПОПАДИ В ТОП!</b><br>
-                    После игры нажми «СОХРАНИТЬ», и мир увидит твой рекорд!
                 </div>
             </div>
 
@@ -229,7 +219,7 @@
 
     <div id="screen-login" class="screen active">
         <h1 style="letter-spacing: 2px; margin-bottom: 5px;">Fight Ball </h1>
-        <p style="color:#666; font-size:12px; margin-bottom: 20px;">AUDIO ENGINE V4.1</p>
+        <p style="color:#666; font-size:12px; margin-bottom: 20px;">AUDIO ENGINE V5.0</p>
         
         <div class="career-box">
             <div class="career-text">Всего ударов</div>
@@ -249,7 +239,7 @@
         </div>
         
         <div style="position: absolute; bottom: 10px; font-size: 9px; color: #444; width: 100%; text-align: center;">
-            © 2026 Fight Ball  RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
+            © 2026 Fight Ball RUSSIA. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
         </div>
     </div>
 
@@ -257,7 +247,7 @@
         <div class="mode-selector">
             <button class="mode-btn active-mode" id="btnSprint" onclick="setMode('sprint')">⚡️ СПРИНТ</button>
             <button class="mode-btn" id="btnSurvival" onclick="setMode('survival')">💀 ВЫЖИВАНИЕ</button>
-            <button class="mode-btn" id="btnRhythm" onclick="setMode('rhythm')">🎵 РИТМ</button>
+            <button class="mode-btn" id="btnReaction" onclick="setMode('reaction')">🚦 РЕАКЦИЯ</button>
         </div>
 
         <div style="display:flex; justify-content:space-between; width:90%; align-items: center; margin-bottom: 5px;">
@@ -351,7 +341,7 @@
     </div>
 
     <script>
-        // === НАСТРОЙКИ АУДИО (V4.1 FINAL) ===
+        // === НАСТРОЙКИ АУДИО (V5.0) ===
         const FILTER_FREQ = 350; 
         const DEBOUNCE_TIME = 150; 
         const SELF_MUTE_TIME = 120; 
@@ -366,9 +356,13 @@
         let audioCtx, analyser, microphone, scriptProcessor;
         let lastEnergy = 0, lastHitTime = 0;
         let isMutedByApp = false;
-        let timerInterval, metronomeInterval;
+        let timerInterval;
         let totalHits = 0, personalBest = 0;
         let currentTheme = 'default';
+
+        // Переменные для режима РЕАКЦИЯ
+        let reactionActive = false; // Можно ли сейчас бить?
+        let reactionTimeout = null;
 
         // ТЕМЫ
         const THEMES = {
@@ -427,7 +421,6 @@
             }
         }
 
-        // 🔥 NO SLEEP FUNCTON 🔥
         async function activateNoSleep() {
             try {
                 if ('wakeLock' in navigator) {
@@ -438,7 +431,6 @@
             if (video) { video.play().catch(e => console.log("Video Hack failed: ", e)); }
         }
 
-        // === АУДИО ДВИЖОК ===
         document.getElementById('startBtn').addEventListener('click', async () => {
             if(isRunning) return;
             activateNoSleep();
@@ -497,13 +489,29 @@
         }
 
         function registerHit() {
+            // ЛОГИКА ДЛЯ РЕЖИМА "РЕАКЦИЯ"
+            if (currentMode === 'reaction') {
+                if (reactionActive) {
+                    // Успел ударить пока горит сигнал
+                    score++;
+                    updateScoreDisplay(true); // true = успех
+                    reactionActive = false;
+                    document.getElementById('scoreDisplay').classList.remove('reaction-go');
+                    document.getElementById('scoreDisplay').classList.add('reaction-wait');
+                    if(document.getElementById('soundCheck').checked) playBeep();
+                } else {
+                    // Ударил без сигнала (фальстарт) - ничего не делаем или штраф
+                    // Можно добавить визуальный эффект ошибки, если нужно
+                }
+                return; // Выход, стандартная логика ниже не нужна
+            }
+
+            // ЛОГИКА ДЛЯ ОСТАЛЬНЫХ РЕЖИМОВ
             score++;
-            const el = document.getElementById('scoreDisplay');
-            el.innerText = score;
+            updateScoreDisplay(false);
             
-            el.classList.add('shake');
             if(currentMode === 'survival') {
-                el.classList.add('hit-survival');
+                document.getElementById('scoreDisplay').classList.add('hit-survival');
                 let bonus = 1.0; 
                 if (score > 30) bonus = 0.5; 
                 if (score > 60) bonus = 0.3;
@@ -511,11 +519,21 @@
                 if(timeLeft > 10) timeLeft = 10;
                 document.getElementById('timer').innerText = Math.floor(timeLeft);
             } else {
-                el.classList.add('hit');
+                document.getElementById('scoreDisplay').classList.add('hit');
             }
-            setTimeout(()=> { el.classList.remove('hit'); el.classList.remove('hit-survival'); el.classList.remove('shake'); }, 100);
-
+            
             if(document.getElementById('soundCheck').checked) playBeep();
+        }
+        
+        function updateScoreDisplay(isReactionHit) {
+            const el = document.getElementById('scoreDisplay');
+            el.innerText = score;
+            el.classList.add('shake');
+            setTimeout(()=> { 
+                el.classList.remove('hit'); 
+                el.classList.remove('hit-survival'); 
+                el.classList.remove('shake'); 
+            }, 100);
         }
 
         function playBeep() {
@@ -531,6 +549,24 @@
             g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
             o.start(); o.stop(audioCtx.currentTime + 0.08);
         }
+        
+        // ЗВУК СИГНАЛА ДЛЯ РЕАКЦИИ
+        function playGoSignal() {
+            isMutedByApp = true; // Чтобы сам звук сигнала не засчитался как удар
+            setTimeout(() => isMutedByApp = false, 200);
+
+            if(!document.getElementById('soundCheck').checked) return;
+
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            
+            o.frequency.value = 600; 
+            o.type = 'sawtooth';
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            o.start(); o.stop(audioCtx.currentTime + 0.2);
+        }
 
         function startRound() {
             score = 0; 
@@ -539,13 +575,23 @@
             document.getElementById('startBtn').style.display = 'none';
             document.querySelector('.mode-selector').style.opacity = '0.5';
 
+            // Сброс стилей
+            const circle = document.getElementById('scoreDisplay');
+            circle.className = 'score-circle'; // Сброс всех классов
+
             if(currentMode === 'survival') {
                 timeLeft = 10;
                 document.getElementById('timer').style.color = '#ffcc00';
+            } else if (currentMode === 'reaction') {
+                timeLeft = 60;
+                document.getElementById('timer').style.color = '#00ff88';
+                circle.classList.add('reaction-wait');
+                scheduleReactionSignal(); // Запуск цикла сигналов
             } else {
                 timeLeft = 60;
                 document.getElementById('timer').style.color = '#fff';
             }
+            
             document.getElementById('timer').innerText = timeLeft;
 
             timerInterval = setInterval(() => {
@@ -553,33 +599,51 @@
                 document.getElementById('timer').innerText = Math.floor(timeLeft);
                 if(timeLeft <= 0) finishGame();
             }, 1000);
-            
-            if(currentMode === 'rhythm') {
-                metronomeInterval = setInterval(() => { if(isRunning && document.getElementById('soundCheck').checked) playTick(); }, 600);
-            }
         }
         
-        function playTick() {
-            // 👇 ИСПРАВЛЕНИЕ: ОТКЛЮЧАЕМ МИКРОФОН ВО ВРЕМЯ ПИКА МЕТРОНОМА
-            isMutedByApp = true;
-            setTimeout(() => isMutedByApp = false, SELF_MUTE_TIME);
-
-            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination);
-            o.frequency.value = 800; o.type = 'square';
-            g.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-            o.start(); o.stop(audioCtx.currentTime + 0.05);
+        // ЛОГИКА ЦИКЛА РЕАКЦИИ
+        function scheduleReactionSignal() {
+            if (!isRunning) return;
+            
+            // Случайная задержка от 1.5 до 4 секунд
+            const delay = Math.floor(Math.random() * 2500) + 1500;
+            
+            reactionTimeout = setTimeout(() => {
+                if (!isRunning) return;
+                
+                // ДАЕМ СИГНАЛ!
+                reactionActive = true;
+                const circle = document.getElementById('scoreDisplay');
+                circle.classList.remove('reaction-wait');
+                circle.classList.add('reaction-go'); // Зеленый
+                playGoSignal();
+                
+                // Окно для удара - 1 секунда (если не ударил - сброс)
+                setTimeout(() => {
+                    if (reactionActive && isRunning) {
+                        // Не успел ударить
+                        reactionActive = false;
+                        circle.classList.remove('reaction-go');
+                        circle.classList.add('reaction-wait');
+                    }
+                    // Планируем следующий сигнал
+                    scheduleReactionSignal();
+                }, 1000);
+                
+            }, delay);
         }
 
         function finishGame() {
             isRunning = false; clearInterval(timerInterval);
-            if(metronomeInterval) clearInterval(metronomeInterval);
             if(scriptProcessor) { scriptProcessor.disconnect(); microphone.disconnect(); }
+            if(reactionTimeout) clearTimeout(reactionTimeout);
             
             launchConfetti();
             document.querySelector('.mode-selector').style.opacity = '1';
             document.getElementById('startBtn').style.display = 'block';
+            
+            // Убираем стили реакции
+            document.getElementById('scoreDisplay').className = 'score-circle';
 
             let rank = "НОВИЧОК";
             if(score > 30) rank = "ЛЮБИТЕЛЬ";
@@ -595,7 +659,7 @@
             document.getElementById('rankDisplay').innerText = rank;
 
             personalBest = parseInt(localStorage.getItem('box_pb_' + currentMode)) || 0;
-            if (score > personalBest && score > 10) {
+            if (score > personalBest && score > 5) {
                 localStorage.setItem('box_pb_' + currentMode, score);
                 document.getElementById('recordMsg').innerText = "🏆 НОВЫЙ РЕКОРД!";
                 document.getElementById('reviewModal').style.display = 'flex';
@@ -603,7 +667,6 @@
                 document.getElementById('recordMsg').innerText = "";
             }
 
-            // Сброс кнопки сохранения
             const btn = document.getElementById('saveBtn');
             btn.innerText = "СОХРАНИТЬ В ТОП";
             btn.disabled = false;
@@ -625,8 +688,8 @@
                 document.getElementById('modeHint').innerText = "БЕЙ, ЧТОБЫ ПОЛУЧИТЬ ВРЕМЯ";
                 document.getElementById('timer').innerText = "10";
             } else {
-                document.getElementById('btnRhythm').className += ' active-mode';
-                document.getElementById('modeHint').innerText = "БЕЙ В ТАКТ";
+                document.getElementById('btnReaction').className += ' active-mode';
+                document.getElementById('modeHint').innerText = "БЕЙ НА ЗЕЛЕНЫЙ СИГНАЛ";
             }
         }
 
@@ -771,11 +834,13 @@
         
         // НОВЫЕ ФУНКЦИИ (ВИРАЛЬНОСТЬ И ПОДДЕРЖКА)
         function shareChallenge() {
-            // Формируем текст с двумя ссылками
+            // Текст: "Я набил X очков! Слабо повторить? Играй тут: (ссылка)"
+            // Плюс ссылка на товар для покупки
+            
             const message = `🥊 Я набил ${score} очков в Fight Ball!\n\nСлабо повторить? 😏\n\n🛒 Тренажер: ${WB_URL_SINGLE}`;
             
-            // В параметр url передаем ссылку на бота (чтобы была красивая превьюшка игры)
-            // А ссылка на товар будет в тексте сообщения
+            // ВАЖНО: BOT_LINK должна быть ссылкой на ТВОЕГО бота (https://t.me/MyBot/start)
+            // Это создаст красивое превью игры в сообщении
             const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(BOT_LINK)}&text=${encodeURIComponent(message)}`;
             
             window.Telegram.WebApp.openTelegramLink(tgShareUrl);
