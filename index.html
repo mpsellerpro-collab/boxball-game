@@ -3,25 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fight Ball  Russia</title>
+    <title>Fight Ball Russia</title>
     
     <script>
         // ====================================================================
         // 🚨 НАСТРОЙКИ: ЗАМЕНИ ЭТИ ССЫЛКИ НА СВОИ!
         // ====================================================================
         
-        // 1. Ссылка на опубликованный Google Apps Script (см. инструкцию ниже)
+        // 1. Ссылка на опубликованный Google Apps Script
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykbaCz_dZksGEVT7IkpbSPqMeY6L-2ui5ChzQCbT0UuH6T_HBJfUn9WHj52fJ3hzZfVg/exec"; 
         
-        // 2. Ссылка на твой контакт или бота поддержки (например: https://t.me/my_support_bot)
+        // 2. Ссылка на твой контакт поддержки
         const SUPPORT_LINK = "https://t.me/fightBallHelp"; 
         
         // 3. Ссылка на документ с правилами
         const POLICY_URL = "https://docs.google.com/document/d/19ZXBWJGYijUGIw7GwUUcuK4CkDfFuSqPxvbQEBJjqnQ/edit?usp=sharing";
         
-        // 4. Ссылки на товары Wildberries
+        // 4. Ссылка на ИГРУ (Твоего бота), чтобы друзья могли зайти
+        // 🔴🔴🔴 ОБЯЗАТЕЛЬНО ЗАМЕНИ НА СВОЮ 🔴🔴🔴
+        const BOT_LINK = "https://t.me/@FightBallGameBot/start"; 
+
+        // 5. Ссылки на товары Wildberries
         const WB_URL_SINGLE = "https://www.wildberries.ru/catalog/176733207/detail.aspx"; 
-        const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";      
+        const WB_URL_SET = "https://www.wildberries.ru/catalog/237586968/detail.aspx";       
         
         // Коды доступа (последние 4 цифры штрихкода)
         const VALID_CODES = ["6433", "0309", "5528"];
@@ -414,7 +418,14 @@
 
         function toggleSettings() { const el = document.getElementById('settingsPanel'); el.style.display = (el.style.display==='block')?'none':'block'; }
         function logout() { localStorage.removeItem('box_auth'); location.reload(); }
-        function openPolicy() { window.Telegram.WebApp.openLink(POLICY_URL); }
+        
+        function openPolicy() {
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+                window.Telegram.WebApp.openLink(POLICY_URL);
+            } else {
+                window.open(POLICY_URL, '_blank');
+            }
+        }
 
         // 🔥 NO SLEEP FUNCTON 🔥
         async function activateNoSleep() {
@@ -549,6 +560,10 @@
         }
         
         function playTick() {
+            // 👇 ИСПРАВЛЕНИЕ: ОТКЛЮЧАЕМ МИКРОФОН ВО ВРЕМЯ ПИКА МЕТРОНОМА
+            isMutedByApp = true;
+            setTimeout(() => isMutedByApp = false, SELF_MUTE_TIME);
+
             const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
             o.connect(g); g.connect(audioCtx.destination);
             o.frequency.value = 800; o.type = 'square';
@@ -653,8 +668,9 @@
             let name = "";
             const savedName = localStorage.getItem('box_username');
             
-            // ПОЛУЧАЕМ TELEGRAM ID ДЛЯ ПОЛИТИКИ КОНФИДЕНЦИАЛЬНОСТИ
-            const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+            const tgUser = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) 
+                           ? window.Telegram.WebApp.initDataUnsafe.user 
+                           : null;
             const tgId = tgUser ? tgUser.id : "anon";
 
             if (savedName && document.getElementById('nameDisplayArea').style.display !== 'none') {
@@ -665,29 +681,28 @@
                 localStorage.setItem('box_username', name); 
             }
             
-            document.getElementById('saveBtn').innerText = "ОТПРАВКА..."; 
-            document.getElementById('saveBtn').disabled = true;
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = "ОТПРАВКА..."; 
+            btn.disabled = true;
             
+            const payload = {
+                name: name, 
+                score: score, 
+                mode: currentMode, 
+                date: new Date().toLocaleDateString(),
+                tgId: tgId 
+            };
+
             fetch(GOOGLE_SCRIPT_URL, { 
                 method: "POST", 
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ 
-                    name: name, 
-                    score: score, 
-                    mode: currentMode, 
-                    date: new Date().toLocaleDateString(),
-                    tgId: tgId 
-                }) 
+                body: JSON.stringify(payload) 
             })
-            .then(r => r.text())
-            .then(data => {
-                console.log("Saved:", data);
+            .then(response => {
                 showLeaderboard(false, currentMode);
             })
             .catch(err => {
-                alert("Ошибка сохранения. Проверь интернет.");
-                document.getElementById('saveBtn').innerText = "СОХРАНИТЬ В ТОП";
-                document.getElementById('saveBtn').disabled = false;
+                console.error(err);
+                showLeaderboard(false, currentMode);
             });
         }
 
@@ -756,9 +771,13 @@
         
         // НОВЫЕ ФУНКЦИИ (ВИРАЛЬНОСТЬ И ПОДДЕРЖКА)
         function shareChallenge() {
-            const productLink = WB_URL_SINGLE; 
-            const message = `🥊 Я набил ${score} очков в Fight Ball !\n\nСлабо повторить? 😏\n\nТренажер брал тут 👇`;
-            const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(productLink)}&text=${encodeURIComponent(message)}`;
+            // Формируем текст с двумя ссылками
+            const message = `🥊 Я набил ${score} очков в Fight Ball!\n\nСлабо повторить? 😏\n\n🛒 Тренажер: ${WB_URL_SINGLE}`;
+            
+            // В параметр url передаем ссылку на бота (чтобы была красивая превьюшка игры)
+            // А ссылка на товар будет в тексте сообщения
+            const tgShareUrl = `https://t.me/share/url?url=${encodeURIComponent(BOT_LINK)}&text=${encodeURIComponent(message)}`;
+            
             window.Telegram.WebApp.openTelegramLink(tgShareUrl);
         }
 
